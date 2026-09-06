@@ -1,7 +1,7 @@
-"""Redis cache layer with async support."""
+"""Redis cache layer using redis-py async client (compatible with Python 3.11+)."""
 import json
 from typing import Any
-import aioredis
+import redis.asyncio as aioredis
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -11,7 +11,7 @@ _redis: aioredis.Redis | None = None
 async def get_redis() -> aioredis.Redis:
     global _redis
     if _redis is None:
-        _redis = await aioredis.from_url(
+        _redis = aioredis.from_url(
             settings.REDIS_URL,
             encoding="utf-8",
             decode_responses=True,

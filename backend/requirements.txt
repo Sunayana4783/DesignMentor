@@ -37,7 +37,6 @@ joblib==1.4.2
 
 # Redis / Cache
 redis==5.0.4
-aioredis==2.0.1
 
 # Utilities
 pydantic==2.7.1
