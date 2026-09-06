@@ -6,6 +6,14 @@ import Spinner from "@/components/ui/Spinner";
 import Badge from "@/components/ui/Badge";
 import { Send, Mic, Trophy } from "lucide-react";
 
+interface Scorecard {
+  overall_score?: number;
+  summary?: string;
+  strengths?: string[];
+  areas_to_improve?: string[];
+  [key: string]: { score?: number; comment?: string } | number | string | string[] | undefined;
+}
+
 const PROBLEMS = [
   { label: "Design YouTube",         value: "Design YouTube",          phase: "hld" },
   { label: "Design URL Shortener",   value: "Design URL Shortener",    phase: "hld" },
@@ -26,7 +34,7 @@ export default function InterviewPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [scorecard, setScorecard] = useState<Record<string, unknown> | null>(null);
+  const [scorecard, setScorecard] = useState<Scorecard | null>(null);
   const [turnsLeft, setTurnsLeft] = useState(15);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -171,7 +179,7 @@ export default function InterviewPage() {
             })}
           </div>
 
-          {scorecard.summary && <p className="text-slate-300 text-sm mb-4">{String(scorecard.summary)}</p>}
+          {scorecard.summary && <p className="text-slate-300 text-sm mb-4">{scorecard.summary}</p>}
 
           <button
             onClick={() => { setPhase("setup"); setMessages([]); setScorecard(null); setTurnsLeft(15); }}
