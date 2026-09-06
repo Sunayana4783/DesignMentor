@@ -1,0 +1,60 @@
+services:
+  # ── Backend (FastAPI) ─────────────────────────────────────────────────
+  - type: web
+    name: designmentor-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: designmentor-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: designmentor-redis
+          type: redis
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: '["https://designmentor-frontend.onrender.com"]'
+
+  # ── Frontend (Next.js) ────────────────────────────────────────────────
+  - type: web
+    name: designmentor-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: designmentor-backend
+          type: web
+          property: host
+          transform: https://$VALUE
+
+  # ── Redis ─────────────────────────────────────────────────────────────
+  - type: redis
+    name: designmentor-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # ── PostgreSQL ────────────────────────────────────────────────────────
+  - name: designmentor-db
+    plan: free
+    databaseName: designmentor_db
+    user: designmentor

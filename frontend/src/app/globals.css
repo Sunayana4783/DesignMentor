@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1e293b; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Prose overrides for markdown */
+.prose-dark { color: #cbd5e1; }
+.prose-dark h1,.prose-dark h2,.prose-dark h3 { color: #f1f5f9; margin-top: 1.2em; margin-bottom: 0.4em; }
+.prose-dark p { margin-bottom: 0.75em; line-height: 1.7; }
+.prose-dark ul,.prose-dark ol { padding-left: 1.5em; margin-bottom: 0.75em; }
+.prose-dark li { margin-bottom: 0.25em; }
+.prose-dark strong { color: #e2e8f0; }
+.prose-dark code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+.prose-dark blockquote { border-left: 3px solid #6366f1; padding-left: 1em; color: #94a3b8; }
