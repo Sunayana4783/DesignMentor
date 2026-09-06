@@ -171,7 +171,7 @@ export default function InterviewPage() {
             })}
           </div>
 
-          {scorecard.summary && <p className="text-slate-300 text-sm mb-4">{scorecard.summary as string}</p>}
+          {scorecard.summary && <p className="text-slate-300 text-sm mb-4">{String(scorecard.summary)}</p>}
 
           <button
             onClick={() => { setPhase("setup"); setMessages([]); setScorecard(null); setTurnsLeft(15); }}
