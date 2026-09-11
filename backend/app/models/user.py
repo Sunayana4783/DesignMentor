@@ -41,6 +41,9 @@ class User(Base):
     learning_sessions: Mapped[list["LearningSession"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    onboarding: Mapped["UserOnboarding | None"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.username}>"

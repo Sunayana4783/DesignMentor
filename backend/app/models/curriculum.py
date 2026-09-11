@@ -24,6 +24,7 @@ class DifficultyLevel(str, enum.Enum):
 
 
 class ConceptCategory(str, enum.Enum):
+    # LLD
     OOP = "oop"
     SOLID = "solid"
     DESIGN_PRINCIPLES = "design_principles"
@@ -31,10 +32,16 @@ class ConceptCategory(str, enum.Enum):
     STRUCTURAL_PATTERNS = "structural_patterns"
     BEHAVIORAL_PATTERNS = "behavioral_patterns"
     LLD_PROBLEMS = "lld_problems"
-    SYSTEM_DESIGN_BASICS = "system_design_basics"
+    # HLD — Architecture
+    ARCHITECTURE = "architecture"
+    # HLD — Networking & APIs
     NETWORKING = "networking"
+    # HLD — Databases
     DATABASES = "databases"
+    # HLD — Caching
     CACHING = "caching"
+    # HLD — General
+    SYSTEM_DESIGN_BASICS = "system_design_basics"
     DISTRIBUTED_SYSTEMS = "distributed_systems"
     HLD_COMPONENTS = "hld_components"
     HLD_PROBLEMS = "hld_problems"

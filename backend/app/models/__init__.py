@@ -3,6 +3,7 @@ from app.models.curriculum import Topic, Concept, ConceptPrerequisite, Phase, Di
 from app.models.quiz import Question, QuizAttempt, UserAnswer, QuestionType, QuestionDifficulty
 from app.models.progress import UserProgress, LearningSession, DesignSubmission, InterviewSession, MasteryLevel
 from app.models.knowledge import KnowledgeChunk
+from app.models.onboarding import UserOnboarding, PathType, ExperienceLevel, CloudProvider
 
 __all__ = [
     "User",
@@ -10,4 +11,5 @@ __all__ = [
     "Question", "QuizAttempt", "UserAnswer", "QuestionType", "QuestionDifficulty",
     "UserProgress", "LearningSession", "DesignSubmission", "InterviewSession", "MasteryLevel",
     "KnowledgeChunk",
+    "UserOnboarding", "PathType", "ExperienceLevel", "CloudProvider",
 ]

@@ -13,10 +13,10 @@ from app.core.logging import logger
 def get_llm(temperature: float = 0.4):
     api_key = os.getenv("GROQ_API_KEY", "")
     return ChatGroq(
-        model="openai/gpt-oss-20b",
+        model="gemma2-9b-it",
         temperature=temperature,
         groq_api_key=api_key,
-        max_tokens=800,  # keep responses short to stay within free tier limits
+        max_tokens=1024,
     )
 
 

@@ -39,6 +39,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem("refresh_token", data.refresh_token);
     const me = await authApi.me();
     set({ user: me.data, isLoading: false });
+    // Signal that onboarding is needed
+    localStorage.setItem("needs_onboarding", "true");
   },
 
   logout: () => {

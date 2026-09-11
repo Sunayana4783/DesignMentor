@@ -16,6 +16,8 @@ from app.core.logging import configure_logging, logger
 from app.db.base import engine, Base
 from app.api.routes import auth, learn, quiz, progress, interview, curriculum
 from app.api.routes.admin import router as admin_router
+from app.api.routes.ping import router as ping_router
+from app.api.routes.onboarding import router as onboarding_router
 
 
 @asynccontextmanager
@@ -59,7 +61,9 @@ app.add_middleware(
 )
 
 # ── Routes ────────────────────────────────────────────────────────────────
+app.include_router(ping_router,          prefix="",                tags=["health"])
 app.include_router(auth.router,         prefix="/api/auth",       tags=["auth"])
+app.include_router(onboarding_router,   prefix="/api/onboarding", tags=["onboarding"])
 app.include_router(curriculum.router,   prefix="/api/curriculum", tags=["curriculum"])
 app.include_router(learn.router,        prefix="/api/learn",      tags=["learn"])
 app.include_router(quiz.router,         prefix="/api/quiz",       tags=["quiz"])

@@ -19,7 +19,7 @@ export default function RegisterPage() {
     setError("");
     try {
       await register(form.email, form.username, form.password, form.full_name || undefined);
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       setError(msg ?? "Registration failed.");

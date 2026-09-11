@@ -69,6 +69,14 @@ async def learn(req: LearnRequest, current_user: CurrentUser, db: DBSession):
     mastery_score = progress.mastery_score if progress else 0.0
     weak_subtopics = progress.weak_subtopics if progress else []
 
+    # ── Load onboarding preferences (cloud provider) ──────────────────────
+    from app.models.onboarding import UserOnboarding
+    onboarding_result = await db.execute(
+        select(UserOnboarding).where(UserOnboarding.user_id == current_user.id)
+    )
+    onboarding = onboarding_result.scalar_one_or_none()
+    cloud_provider = onboarding.cloud_provider.value if onboarding else "none"
+
     # ── RAG context (best-effort) ─────────────────────────────────────────
     rag_context = ""
     try:
@@ -97,6 +105,7 @@ async def learn(req: LearnRequest, current_user: CurrentUser, db: DBSession):
         "rag_context":    rag_context,
         "reteach_count":  0,
         "agent_action":   "teach",
+        "cloud_provider": cloud_provider,
     }
 
     # ── Route to correct agent ────────────────────────────────────────────

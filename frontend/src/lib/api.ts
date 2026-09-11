@@ -44,6 +44,18 @@ api.interceptors.response.use(
   }
 );
 
+// ── Onboarding ────────────────────────────────────────────────────────────
+export const onboardingApi = {
+  save: (data: {
+    path_type: string;
+    experience: string;
+    lld_knowledge_pct: number;
+    hld_knowledge_pct: number;
+    cloud_provider: string;
+  }) => api.post("/api/onboarding/", data),
+  get: () => api.get("/api/onboarding/"),
+};
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const authApi = {
   register: (data: { email: string; username: string; password: string; full_name?: string }) =>

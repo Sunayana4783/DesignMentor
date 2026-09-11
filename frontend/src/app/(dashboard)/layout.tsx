@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/api";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,7 +17,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
     loadUser()
-      .then(() => setChecked(true))
+      .then(async () => {
+        try {
+          const { data } = await api.get("/api/onboarding/");
+          if (!data || !data.is_complete) {
+            router.push("/onboarding");
+            return;
+          }
+        } catch {
+          // onboarding check failed — continue to dashboard
+        }
+        setChecked(true);
+      })
       .catch(() => {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
@@ -24,7 +36,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       });
   }, []);
 
-  // Not yet checked — show nothing
   if (!checked || !user) return null;
 
   return (

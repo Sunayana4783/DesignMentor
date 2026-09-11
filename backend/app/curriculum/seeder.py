@@ -1,6 +1,7 @@
 """
 Seed the database with the full curriculum from knowledge_graph.py.
 Run once after migrations:  python -m app.curriculum.seeder
+Idempotent — safe to run multiple times.
 """
 import asyncio
 import uuid
@@ -33,6 +34,11 @@ async def seed(db: AsyncSession) -> None:
             )
             db.add(topic)
             logger.info("topic_seeded", slug=t_data["slug"])
+        else:
+            # Update name/description if changed
+            topic.name = t_data["name"]
+            topic.description = t_data.get("description", "")
+            topic.order_index = t_data["order_index"]
         topic_map[t_data["slug"]] = topic
 
     await db.flush()
@@ -43,11 +49,13 @@ async def seed(db: AsyncSession) -> None:
     for c_data in CONCEPTS:
         result = await db.execute(select(Concept).where(Concept.slug == c_data["slug"]))
         concept = result.scalar_one_or_none()
+
+        topic = topic_map.get(c_data["topic_slug"])
+        if not topic:
+            logger.warning("unknown_topic", slug=c_data["topic_slug"])
+            continue
+
         if not concept:
-            topic = topic_map.get(c_data["topic_slug"])
-            if not topic:
-                logger.warning("unknown_topic", slug=c_data["topic_slug"])
-                continue
             concept = Concept(
                 id=uuid.uuid4(),
                 topic_id=topic.id,
@@ -63,6 +71,15 @@ async def seed(db: AsyncSession) -> None:
             )
             db.add(concept)
             logger.info("concept_seeded", slug=c_data["slug"])
+        else:
+            # Update mutable fields
+            concept.name = c_data["name"]
+            concept.description = c_data["description"]
+            concept.content = c_data.get("content", {})
+            concept.order_index = c_data["order_index"]
+            concept.mastery_threshold = c_data.get("mastery_threshold", 75.0)
+            concept.estimated_minutes = c_data.get("estimated_minutes", 15)
+
         concept_map[c_data["slug"]] = concept
 
     await db.flush()
@@ -77,7 +94,6 @@ async def seed(db: AsyncSession) -> None:
             if not prereq:
                 logger.warning("unknown_prereq", concept=concept_slug, prereq=prereq_slug)
                 continue
-            # Check if edge already exists
             existing = await db.execute(
                 select(ConceptPrerequisite).where(
                     ConceptPrerequisite.concept_id == concept.id,
@@ -85,13 +101,12 @@ async def seed(db: AsyncSession) -> None:
                 )
             )
             if not existing.scalar_one_or_none():
-                edge = ConceptPrerequisite(
+                db.add(ConceptPrerequisite(
                     id=uuid.uuid4(),
                     concept_id=concept.id,
                     prerequisite_id=prereq.id,
                     is_required=True,
-                )
-                db.add(edge)
+                ))
 
     await db.commit()
     logger.info("seed_complete", topics=len(topic_map), concepts=len(concept_map))
@@ -100,7 +115,6 @@ async def seed(db: AsyncSession) -> None:
 async def main() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
     async with AsyncSessionLocal() as db:
         await seed(db)
 

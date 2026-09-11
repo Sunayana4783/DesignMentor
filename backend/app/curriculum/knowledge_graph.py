@@ -1,934 +1,373 @@
 """
-Complete Knowledge Graph for DesignMentor AI.
-
-Defines every concept, its phase/category, difficulty, content payload,
-and prerequisite edges.  This data is consumed by the DB seeder.
+DesignMentor AI — Complete Knowledge Graph
+Four HLD areas: Architecture, Networking & APIs, Databases, Caching
+Plus LLD foundation retained.
 """
-
 from app.models.curriculum import Phase, DifficultyLevel, ConceptCategory
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TOPICS
+# TOPICS  (14 topics across LLD + 4 HLD areas)
 # ─────────────────────────────────────────────────────────────────────────────
-
-TOPICS: list[dict] = [
-    {"name": "OOP Foundation",        "slug": "oop-foundation",        "phase": Phase.FOUNDATION, "order_index": 1,  "description": "Core object-oriented programming concepts"},
-    {"name": "SOLID Principles",      "slug": "solid-principles",      "phase": Phase.LLD,        "order_index": 2,  "description": "The five SOLID design principles"},
-    {"name": "Design Principles",     "slug": "design-principles",     "phase": Phase.LLD,        "order_index": 3,  "description": "DRY, KISS, YAGNI and other core principles"},
-    {"name": "Creational Patterns",   "slug": "creational-patterns",   "phase": Phase.LLD,        "order_index": 4,  "description": "Patterns that deal with object creation"},
-    {"name": "Structural Patterns",   "slug": "structural-patterns",   "phase": Phase.LLD,        "order_index": 5,  "description": "Patterns that deal with object composition"},
-    {"name": "Behavioral Patterns",   "slug": "behavioral-patterns",   "phase": Phase.LLD,        "order_index": 6,  "description": "Patterns that deal with object communication"},
-    {"name": "LLD Problems",          "slug": "lld-problems",          "phase": Phase.LLD,        "order_index": 7,  "description": "Real-world low-level design problems"},
-    {"name": "System Design Basics",  "slug": "system-design-basics",  "phase": Phase.HLD,        "order_index": 8,  "description": "Fundamentals of system design"},
-    {"name": "Networking",            "slug": "networking",            "phase": Phase.HLD,        "order_index": 9,  "description": "Networking fundamentals for system design"},
-    {"name": "Databases",             "slug": "databases",             "phase": Phase.HLD,        "order_index": 10, "description": "SQL, NoSQL and when to choose which"},
-    {"name": "Caching",               "slug": "caching",               "phase": Phase.HLD,        "order_index": 11, "description": "Caching strategies, Redis, invalidation"},
-    {"name": "Distributed Systems",   "slug": "distributed-systems",   "phase": Phase.HLD,        "order_index": 12, "description": "Scaling, replication, CAP theorem"},
-    {"name": "HLD Components",        "slug": "hld-components",        "phase": Phase.HLD,        "order_index": 13, "description": "Load balancers, API gateways, message queues"},
-    {"name": "HLD Problems",          "slug": "hld-problems",          "phase": Phase.HLD,        "order_index": 14, "description": "Real-world high-level design problems"},
+TOPICS = [
+    # ── LLD ──────────────────────────────────────────────────────────────
+    {"name": "OOP Foundation",           "slug": "oop-foundation",        "phase": Phase.LLD, "order_index": 1,  "description": "Classes, objects, encapsulation, inheritance, polymorphism, abstraction"},
+    {"name": "SOLID Principles",         "slug": "solid-principles",      "phase": Phase.LLD, "order_index": 2,  "description": "Five principles of object-oriented design"},
+    {"name": "Design Principles",        "slug": "design-principles",     "phase": Phase.LLD, "order_index": 3,  "description": "DRY, KISS, YAGNI, dependency injection, clean code"},
+    {"name": "Design Patterns",          "slug": "design-patterns",       "phase": Phase.LLD, "order_index": 4,  "description": "Creational, structural, and behavioral GoF patterns"},
+    {"name": "LLD Case Studies",         "slug": "lld-problems",          "phase": Phase.LLD, "order_index": 5,  "description": "Real-world low-level design problems"},
+    # ── HLD Area 1: Architecture ──────────────────────────────────────────
+    {"name": "Architecture Fundamentals","slug": "arch-fundamentals",     "phase": Phase.HLD, "order_index": 6,  "description": "System design basics, NFRs, quality attributes, scalability"},
+    {"name": "Architecture Styles",      "slug": "arch-styles",           "phase": Phase.HLD, "order_index": 7,  "description": "Monolith, microservices, event-driven, serverless"},
+    {"name": "Architecture Patterns",    "slug": "arch-patterns",         "phase": Phase.HLD, "order_index": 8,  "description": "API gateway, circuit breaker, CQRS, saga, outbox"},
+    {"name": "Deployment Architecture",  "slug": "arch-deployment",       "phase": Phase.HLD, "order_index": 9,  "description": "HA, fault tolerance, multi-region, deployment strategies"},
+    # ── HLD Area 2: Networking & APIs ─────────────────────────────────────
+    {"name": "Networking Fundamentals",  "slug": "net-fundamentals",      "phase": Phase.HLD, "order_index": 10, "description": "IP, TCP, UDP, DNS, HTTP, HTTPS, TLS"},
+    {"name": "API Design",               "slug": "api-design",            "phase": Phase.HLD, "order_index": 11, "description": "REST, GraphQL, gRPC, WebSockets, webhooks"},
+    {"name": "Network Reliability",      "slug": "net-reliability",       "phase": Phase.HLD, "order_index": 12, "description": "Retry, timeout, circuit breaker, security, CORS"},
+    # ── HLD Area 3: Databases ─────────────────────────────────────────────
+    {"name": "SQL Databases",            "slug": "sql-db",                "phase": Phase.HLD, "order_index": 13, "description": "Relational databases, ACID, indexing, transactions"},
+    {"name": "NoSQL & Scaling",          "slug": "nosql-scaling",         "phase": Phase.HLD, "order_index": 14, "description": "NoSQL types, replication, sharding, CAP, consistency"},
+    # ── HLD Area 4: Caching ───────────────────────────────────────────────
+    {"name": "Caching",                  "slug": "caching-topic",         "phase": Phase.HLD, "order_index": 15, "description": "Redis, strategies, eviction, invalidation, distributed cache"},
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONCEPTS
-# key fields: slug, topic_slug, category, difficulty, description,
-#             content (rich JSON), order_index, mastery_threshold
 # ─────────────────────────────────────────────────────────────────────────────
+CONCEPTS = [
 
-CONCEPTS: list[dict] = [
+# ══════════════════════════════════════════════════════════════════════════════
+# LLD — OOP FOUNDATION
+# ══════════════════════════════════════════════════════════════════════════════
+{"slug":"classes-and-objects","topic_slug":"oop-foundation","name":"Classes & Objects","category":ConceptCategory.OOP,"difficulty":DifficultyLevel.BEGINNER,"order_index":1,"mastery_threshold":70.0,"estimated_minutes":12,
+"description":"A class is a blueprint; an object is a runtime instance with its own state.",
+"content":{"explanation":"A class defines structure (fields) and behaviour (methods). An object is a runtime instance with its own copy of data.","analogy":"A Car class is the factory blueprint. Your specific red Toyota Camry (KA-01) is the object — an instance built from that blueprint.","real_world_example":"In an Uber system, Driver class has: name, location, rating, and methods acceptRide(), updateLocation(). Every actual driver (Ramesh, Suresh) is a separate object with independent state.","code_example":{"language":"java","bad":"String d1Name=\"Ramesh\"; double d1Lat=12.9;\n// What if you need 10,000 drivers?","good":"public class Driver {\n  private String name;\n  private double lat, lon, rating;\n  public void updateLocation(double lat, double lon) {\n    this.lat=lat; this.lon=lon;\n  }\n}"},"interview_questions":["What is the difference between a class and an object?","What happens in memory when you call 'new'?"]}},
 
-    # ── OOP FOUNDATION ───────────────────────────────────────────────────
-    {
-        "slug": "classes-and-objects",
-        "topic_slug": "oop-foundation",
-        "name": "Classes & Objects",
-        "category": ConceptCategory.OOP,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "The fundamental building blocks of OOP — blueprints (classes) and their instances (objects).",
-        "order_index": 1,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 10,
-        "content": {
-            "explanation": "A class is a blueprint that defines state (fields) and behaviour (methods). An object is a runtime instance of a class with its own copy of state.",
-            "analogy": "A class is like an architectural blueprint; an object is the actual building constructed from it.",
-            "key_points": ["Classes encapsulate data + behaviour", "Objects are heap-allocated instances", "Constructor initialises state", "Multiple objects can share the same class"],
-            "code_example": {
-                "language": "java",
-                "bad": "// Scattered global variables\nString carBrand = \"Toyota\";\nint carSpeed = 0;",
-                "good": "public class Car {\n    private String brand;\n    private int speed;\n\n    public Car(String brand) {\n        this.brand = brand;\n        this.speed = 0;\n    }\n\n    public void accelerate(int amount) {\n        speed += amount;\n    }\n}"
-            },
-            "interview_questions": [
-                "What is the difference between a class and an object?",
-                "What happens in memory when you create an object?"
-            ]
-        }
-    },
-    {
-        "slug": "encapsulation",
-        "topic_slug": "oop-foundation",
-        "name": "Encapsulation",
-        "category": ConceptCategory.OOP,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Hiding internal state and requiring access through well-defined interfaces.",
-        "order_index": 2,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 12,
-        "content": {
-            "explanation": "Encapsulation bundles data and the methods that operate on that data, and restricts direct access to some of the object's components. This prevents accidental modification and enforces invariants.",
-            "analogy": "A bank account — you can't directly change the balance field; you must use deposit() or withdraw() which enforce rules.",
-            "key_points": ["Use private fields", "Expose via getters/setters with validation", "Invariants are enforced at one place", "Reduces coupling"],
-            "code_example": {
-                "language": "java",
-                "bad": "public class BankAccount {\n    public double balance;\n}",
-                "good": "public class BankAccount {\n    private double balance;\n\n    public void deposit(double amount) {\n        if (amount <= 0) throw new IllegalArgumentException(\"Must be positive\");\n        balance += amount;\n    }\n\n    public double getBalance() { return balance; }\n}"
-            },
-            "interview_questions": [
-                "Why is encapsulation important?",
-                "Can you break encapsulation? Give an example."
-            ]
-        }
-    },
-    {
-        "slug": "inheritance",
-        "topic_slug": "oop-foundation",
-        "name": "Inheritance",
-        "category": ConceptCategory.OOP,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "A mechanism to create a new class by extending an existing one, inheriting its fields and methods.",
-        "order_index": 3,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 15,
-        "content": {
-            "explanation": "Inheritance allows a subclass to inherit state and behaviour from a parent class. It enables code reuse but introduces tight coupling between parent and child.",
-            "analogy": "A SavingsAccount IS-A BankAccount — it inherits all bank account behaviour and adds interest calculation.",
-            "key_points": ["IS-A relationship", "Single inheritance in Java/C#", "Method overriding", "super keyword", "Fragile base class problem"],
-            "code_example": {
-                "language": "java",
-                "good": "public class Animal {\n    protected String name;\n    public void eat() { System.out.println(name + \" eats\"); }\n}\n\npublic class Dog extends Animal {\n    public void bark() { System.out.println(name + \" barks\"); }\n}"
-            },
-            "interview_questions": [
-                "When should you use inheritance vs composition?",
-                "What is the diamond problem?"
-            ]
-        }
-    },
-    {
-        "slug": "polymorphism",
-        "topic_slug": "oop-foundation",
-        "name": "Polymorphism",
-        "category": ConceptCategory.OOP,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "The ability of different objects to be treated as instances of the same type through a common interface.",
-        "order_index": 4,
-        "mastery_threshold": 72.0,
-        "estimated_minutes": 15,
-        "content": {
-            "explanation": "Polymorphism means 'many forms'. It lets you program to an abstraction, allowing different implementations to be swapped without changing client code. Runtime (dynamic) polymorphism uses method overriding; compile-time (static) uses method overloading.",
-            "analogy": "A TV remote 'speaks to' many different TV brands — same interface, different implementations.",
-            "key_points": ["Runtime polymorphism via overriding", "Compile-time via overloading", "Liskov Substitution relies on this", "Enables open/closed design"],
-            "code_example": {
-                "language": "java",
-                "good": "List<Shape> shapes = List.of(new Circle(), new Rectangle());\nfor (Shape s : shapes) {\n    s.draw();  // each draws differently\n}"
-            },
-            "interview_questions": [
-                "What is the difference between overriding and overloading?",
-                "How does dynamic dispatch work?"
-            ]
-        }
-    },
-    {
-        "slug": "abstraction",
-        "topic_slug": "oop-foundation",
-        "name": "Abstraction",
-        "category": ConceptCategory.OOP,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Exposing only essential behaviour and hiding implementation details.",
-        "order_index": 5,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 12,
-        "content": {
-            "explanation": "Abstraction lets you work with concepts at a high level without worrying about low-level implementation. Abstract classes and interfaces are the main tools.",
-            "analogy": "Driving a car — you use the steering wheel and pedals without knowing the engine internals.",
-            "key_points": ["Abstract classes vs interfaces", "Hide complexity", "Define contracts", "Allow multiple implementations"],
-            "code_example": {
-                "language": "java",
-                "good": "public interface PaymentGateway {\n    PaymentResult charge(double amount, String cardToken);\n    void refund(String transactionId);\n}\n// Client code only depends on the interface"
-            },
-            "interview_questions": ["Difference between abstract class and interface?", "When would you use an abstract class instead of an interface?"]
-        }
-    },
-    {
-        "slug": "interfaces-and-composition",
-        "topic_slug": "oop-foundation",
-        "name": "Interfaces & Composition",
-        "category": ConceptCategory.OOP,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Programming to interfaces and preferring composition over inheritance.",
-        "order_index": 6,
-        "mastery_threshold": 72.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "Composition means a class CONTAINS another object instead of inheriting from it. This leads to more flexible, testable designs. 'Favour composition over inheritance' is a core design principle.",
-            "analogy": "A Car HAS-A Engine rather than IS-AN Engine.",
-            "key_points": ["HAS-A vs IS-A", "Composition leads to loose coupling", "Interfaces define contracts", "Dependency injection relies on composition"],
-            "code_example": {
-                "language": "java",
-                "bad": "class Logger extends FileWriter {}",
-                "good": "class Logger {\n    private final Writer writer;\n    public Logger(Writer writer) { this.writer = writer; }\n    public void log(String msg) { writer.write(msg); }\n}"
-            },
-            "interview_questions": ["Why prefer composition over inheritance?", "What is the role of interfaces in composition?"]
-        }
-    },
+{"slug":"encapsulation","topic_slug":"oop-foundation","name":"Encapsulation","category":ConceptCategory.OOP,"difficulty":DifficultyLevel.BEGINNER,"order_index":2,"mastery_threshold":70.0,"estimated_minutes":12,
+"description":"Bundling data and methods together and restricting direct access to internal state.",
+"content":{"explanation":"Encapsulation hides internal details and only exposes what is necessary. It protects data from invalid states.","analogy":"An ATM lets you press buttons (public interface) but you cannot touch the cash vault or wiring (private). The ATM enforces rules: can't withdraw more than balance.","real_world_example":"BankAccount.balance must be private. If public, any code could set balance=999999. With encapsulation, only deposit() and withdraw() change balance — and they validate amounts.","code_example":{"language":"java","bad":"public class BankAccount { public double balance; }","good":"public class BankAccount {\n  private double balance;\n  public void deposit(double amt) {\n    if(amt<=0) throw new IllegalArgumentException();\n    balance+=amt;\n  }\n  public double getBalance() { return balance; }\n}"},"interview_questions":["Why is encapsulation important?","Can Java reflection break encapsulation?"]}},
 
-    # ── SOLID PRINCIPLES ─────────────────────────────────────────────────
-    {
-        "slug": "single-responsibility",
-        "topic_slug": "solid-principles",
-        "name": "Single Responsibility Principle",
-        "category": ConceptCategory.SOLID,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "A class should have only one reason to change.",
-        "order_index": 7,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 15,
-        "content": {
-            "explanation": "SRP states that every module/class should have responsibility over a single part of the functionality. If a class changes for two different reasons, it violates SRP.",
-            "analogy": "A chef should cook, not also be the cashier and janitor.",
-            "key_points": ["One class = one responsibility", "Easier to test", "Easier to maintain", "Cohesion vs coupling"],
-            "code_example": {
-                "language": "java",
-                "bad": "class UserService {\n    void registerUser(User u) {...}\n    void sendWelcomeEmail(User u) {...}\n    void saveToDatabase(User u) {...}\n}",
-                "good": "class UserRegistration { void register(User u) {...} }\nclass EmailService { void sendWelcome(User u) {...} }\nclass UserRepository { void save(User u) {...} }"
-            },
-            "interview_questions": ["How do you identify SRP violations?", "What is cohesion?"]
-        }
-    },
-    {
-        "slug": "open-closed",
-        "topic_slug": "solid-principles",
-        "name": "Open/Closed Principle",
-        "category": ConceptCategory.SOLID,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Software entities should be open for extension but closed for modification.",
-        "order_index": 8,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "OCP means you should be able to add new behaviour without modifying existing code. Achieved through abstraction and polymorphism — adding a new class that implements an interface rather than editing existing logic.",
-            "analogy": "A power strip — you extend it by plugging in new devices without rewiring the strip itself.",
-            "key_points": ["Extend via new classes, not modification", "Relies on abstractions", "Strategy pattern is a classic OCP example", "Reduces regression risk"],
-            "code_example": {
-                "language": "java",
-                "bad": "class DiscountCalculator {\n    double calculate(String type, double price) {\n        if (type.equals(\"STUDENT\")) return price * 0.8;\n        if (type.equals(\"EMPLOYEE\")) return price * 0.7;\n        return price;\n    }\n}",
-                "good": "interface DiscountStrategy { double apply(double price); }\nclass StudentDiscount implements DiscountStrategy { ... }\nclass EmployeeDiscount implements DiscountStrategy { ... }\nclass DiscountCalculator {\n    double calculate(DiscountStrategy strategy, double price) {\n        return strategy.apply(price);\n    }\n}"
-            },
-            "interview_questions": ["How does OCP relate to the Strategy pattern?", "Can OCP be over-applied?"]
-        }
-    },
-    {
-        "slug": "liskov-substitution",
-        "topic_slug": "solid-principles",
-        "name": "Liskov Substitution Principle",
-        "category": ConceptCategory.SOLID,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Subtypes must be substitutable for their base types without altering program correctness.",
-        "order_index": 9,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "If S is a subtype of T, objects of type T may be replaced by objects of type S without breaking the program. Violations usually occur when a subclass throws unexpected exceptions or weakens postconditions.",
-            "analogy": "If you order 'a vehicle' and receive a car, it should work as a vehicle. If it can't drive on roads, LSP is violated.",
-            "key_points": ["Subtypes must honour parent contracts", "Don't strengthen preconditions", "Don't weaken postconditions", "Square/Rectangle is the classic violation"],
-            "code_example": {
-                "language": "java",
-                "bad": "class Rectangle { setWidth(int w); setHeight(int h); }\nclass Square extends Rectangle {\n    // Overrides setWidth to also set height — breaks contracts!\n}",
-                "good": "interface Shape { int area(); }\nclass Rectangle implements Shape {...}\nclass Square implements Shape {...}"
-            },
-            "interview_questions": ["Give a real example of an LSP violation.", "How does LSP relate to polymorphism?"]
-        }
-    },
-    {
-        "slug": "interface-segregation",
-        "topic_slug": "solid-principles",
-        "name": "Interface Segregation Principle",
-        "category": ConceptCategory.SOLID,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Clients should not be forced to depend on interfaces they do not use.",
-        "order_index": 10,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 15,
-        "content": {
-            "explanation": "ISP says keep interfaces small and focused. A large 'fat' interface forces implementors to provide methods they don't need. Break large interfaces into role-specific ones.",
-            "analogy": "A printer should not need to implement fax() just because it shares an interface with a fax machine.",
-            "key_points": ["Fat interfaces are a code smell", "Role interfaces", "Clients depend only on what they use", "Enables mocking in tests"],
-            "code_example": {
-                "language": "java",
-                "bad": "interface Worker { void work(); void eat(); void sleep(); }",
-                "good": "interface Workable { void work(); }\ninterface Eatable { void eat(); }\ninterface Sleepable { void sleep(); }"
-            },
-            "interview_questions": ["How does ISP reduce coupling?"]
-        }
-    },
-    {
-        "slug": "dependency-inversion",
-        "topic_slug": "solid-principles",
-        "name": "Dependency Inversion Principle",
-        "category": ConceptCategory.SOLID,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "High-level modules should not depend on low-level modules. Both should depend on abstractions.",
-        "order_index": 11,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "DIP states that you should program to abstractions, not concretions. High-level business logic should not import low-level database or infrastructure classes directly — they should both depend on an interface.",
-            "analogy": "An electrical outlet doesn't care what device you plug in — it provides a standard interface (abstraction). The device depends on the outlet contract, not the other way.",
-            "key_points": ["Program to interfaces", "Invert the dependency direction", "Foundation of dependency injection frameworks", "Enables easy testing and swapping of implementations"],
-            "code_example": {
-                "language": "java",
-                "bad": "class OrderService {\n    private MySQLOrderRepository repo = new MySQLOrderRepository();\n}",
-                "good": "class OrderService {\n    private final OrderRepository repo;\n    public OrderService(OrderRepository repo) { this.repo = repo; }\n}"
-            },
-            "interview_questions": ["What is the difference between DIP and dependency injection?", "How does DIP enable unit testing?"]
-        }
-    },
+{"slug":"inheritance","topic_slug":"oop-foundation","name":"Inheritance","category":ConceptCategory.OOP,"difficulty":DifficultyLevel.BEGINNER,"order_index":3,"mastery_threshold":70.0,"estimated_minutes":15,
+"description":"Create a new class by extending an existing one, inheriting its fields and methods.",
+"content":{"explanation":"Inheritance represents IS-A. Subclass inherits non-private members and can add/override behaviour.","analogy":"In a food delivery app: User has name, email, login(). Customer extends User and adds placeOrder(). DeliveryPartner extends User and adds acceptDelivery(). Both share User behaviour.","real_world_example":"Payment base class has amount, currency, process(). CreditCardPayment extends it adding cardNumber, cvv. UPIPayment extends it adding upiId. Each overrides process() with its own logic.","interview_questions":["When to use inheritance vs composition?","What is the fragile base class problem?"]}},
 
-    # ── DESIGN PRINCIPLES ────────────────────────────────────────────────
-    {
-        "slug": "dry-principle",
-        "topic_slug": "design-principles",
-        "name": "DRY — Don't Repeat Yourself",
-        "category": ConceptCategory.DESIGN_PRINCIPLES,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Every piece of knowledge must have a single, unambiguous representation in the system.",
-        "order_index": 12,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 10,
-        "content": {
-            "explanation": "DRY means avoiding duplication of logic, not just copy-pasted code. If you change a rule in one place, you shouldn't need to hunt down 10 other places.",
-            "key_points": ["Extract repeated logic into functions", "Single source of truth", "Applies to data, logic, and configuration"],
-            "interview_questions": ["Can over-applying DRY cause problems?"]
-        }
-    },
-    {
-        "slug": "kiss-yagni",
-        "topic_slug": "design-principles",
-        "name": "KISS & YAGNI",
-        "category": ConceptCategory.DESIGN_PRINCIPLES,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Keep It Simple Stupid. You Aren't Gonna Need It.",
-        "order_index": 13,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 10,
-        "content": {
-            "explanation": "KISS: the simplest solution that works is usually best. YAGNI: don't build features you don't need yet. Both fight over-engineering.",
-            "key_points": ["Avoid premature abstraction", "Build what's needed now", "Refactor when requirements actually change"],
-            "interview_questions": ["When does YAGNI conflict with scalability?"]
-        }
-    },
-    {
-        "slug": "dependency-injection",
-        "topic_slug": "design-principles",
-        "name": "Dependency Injection",
-        "category": ConceptCategory.DESIGN_PRINCIPLES,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Passing dependencies into a class rather than creating them internally.",
-        "order_index": 14,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "DI is a technique where an object's dependencies are provided externally (by a container or caller) instead of being created inside the object. Three types: constructor injection, setter injection, interface injection.",
-            "analogy": "Instead of a coffee machine making its own water, you supply water from outside.",
-            "key_points": ["Constructor injection is preferred", "IoC containers (Spring, FastAPI Depends)", "Enables mocking in tests", "Implements DIP"],
-            "code_example": {
-                "language": "python",
-                "good": "class OrderService:\n    def __init__(self, repo: OrderRepository):\n        self.repo = repo\n\n# Caller injects:\nservice = OrderService(repo=PostgresOrderRepository())"
-            },
-            "interview_questions": ["What is the difference between DI and DIP?", "What is an IoC container?"]
-        }
-    },
+{"slug":"polymorphism","topic_slug":"oop-foundation","name":"Polymorphism","category":ConceptCategory.OOP,"difficulty":DifficultyLevel.BEGINNER,"order_index":4,"mastery_threshold":70.0,"estimated_minutes":12,
+"description":"One interface, many implementations — same method call behaves differently at runtime.",
+"content":{"explanation":"Polymorphism lets code work with the parent type but execute the child's implementation at runtime.","real_world_example":"Ride-sharing: Vehicle interface, calculateFare(km). Car charges ₹12/km, Bike ₹8/km, Auto ₹10/km. Client calls v.calculateFare(5.2) — same call, different result based on vehicle type.","interview_questions":["Difference between overriding and overloading?","How does dynamic dispatch work?"]}},
 
-    # ── CREATIONAL PATTERNS ───────────────────────────────────────────────
-    {
-        "slug": "singleton-pattern",
-        "topic_slug": "creational-patterns",
-        "name": "Singleton Pattern",
-        "category": ConceptCategory.CREATIONAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Ensures a class has only one instance and provides a global access point.",
-        "order_index": 15,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 15,
-        "content": {
-            "explanation": "Singleton restricts instantiation of a class to one object. Common uses: config managers, connection pools, loggers. Must be thread-safe in concurrent environments.",
-            "key_points": ["Private constructor", "Static getInstance()", "Thread-safety with double-checked locking or enum approach", "Often overused — consider DI instead"],
-            "code_example": {
-                "language": "java",
-                "good": "public enum DatabaseConnection {\n    INSTANCE;\n    public Connection getConnection() { ... }\n}"
-            },
-            "interview_questions": ["How do you make a Singleton thread-safe?", "What are the downsides of Singleton?"]
-        }
-    },
-    {
-        "slug": "factory-pattern",
-        "topic_slug": "creational-patterns",
-        "name": "Factory Pattern",
-        "category": ConceptCategory.CREATIONAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Defines an interface for creating objects but lets subclasses decide which class to instantiate.",
-        "order_index": 16,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "Factory method decouples the creation of objects from their usage. The client calls a factory method; the factory decides which concrete class to instantiate based on input.",
-            "analogy": "A vehicle factory — you ask for 'a vehicle', it decides whether to produce a Car, Bike, or Truck based on your spec.",
-            "key_points": ["Decouples creation from use", "Open/Closed — add new products without changing client", "Static factory vs Factory Method Pattern"],
-            "code_example": {
-                "language": "java",
-                "good": "interface Notification { void send(String msg); }\nclass EmailNotification implements Notification {...}\nclass SMSNotification implements Notification {...}\n\nclass NotificationFactory {\n    static Notification create(String type) {\n        return switch(type) {\n            case \"EMAIL\" -> new EmailNotification();\n            case \"SMS\"   -> new SMSNotification();\n            default -> throw new IllegalArgumentException(type);\n        };\n    }\n}"
-            },
-            "interview_questions": ["When would you use Factory vs Abstract Factory?"]
-        }
-    },
-    {
-        "slug": "builder-pattern",
-        "topic_slug": "creational-patterns",
-        "name": "Builder Pattern",
-        "category": ConceptCategory.CREATIONAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Separates the construction of a complex object from its representation.",
-        "order_index": 17,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "Builder is used when an object requires many optional parameters or complex construction steps. It avoids telescoping constructors and makes construction readable.",
-            "key_points": ["Fluent API / method chaining", "Immutable objects", "Avoids telescoping constructors", "Director optional"],
-            "code_example": {
-                "language": "java",
-                "good": "Pizza pizza = new Pizza.Builder(\"Large\")\n    .addTopping(\"Cheese\")\n    .addTopping(\"Mushrooms\")\n    .extraCrispy(true)\n    .build();"
-            },
-            "interview_questions": ["When would you use Builder over a constructor with many params?"]
-        }
-    },
+{"slug":"abstraction","topic_slug":"oop-foundation","name":"Abstraction","category":ConceptCategory.OOP,"difficulty":DifficultyLevel.BEGINNER,"order_index":5,"mastery_threshold":70.0,"estimated_minutes":12,
+"description":"Show only what is necessary, hide implementation complexity.",
+"content":{"explanation":"Abstraction lets you work at a higher level without worrying about low-level details.","analogy":"Google Maps: you say 'take me to the airport'. You don't need to know GPS satellite math, tile rendering, or traffic data aggregation.","real_world_example":"FileStorage interface: upload(file), download(id), delete(id). Client doesn't know if it's S3, GCS, or local disk. Swap cloud providers without changing client code.","interview_questions":["Abstract class vs interface — when to use each?","What is the difference between abstraction and encapsulation?"]}},
 
-    # ── STRUCTURAL PATTERNS ───────────────────────────────────────────────
-    {
-        "slug": "adapter-pattern",
-        "topic_slug": "structural-patterns",
-        "name": "Adapter Pattern",
-        "category": ConceptCategory.STRUCTURAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Converts the interface of a class into another interface clients expect.",
-        "order_index": 18,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 15,
-        "content": {
-            "explanation": "Adapter acts as a bridge between incompatible interfaces. The adapter wraps an existing class and exposes a new interface that the client expects.",
-            "analogy": "A travel power adapter — same device, different socket interface.",
-            "key_points": ["Structural compatibility", "Object adapter vs class adapter", "Common when integrating third-party libraries"],
-            "code_example": {
-                "language": "java",
-                "good": "interface MediaPlayer { void play(String file); }\nclass VLCPlayer { void playVLC(String file) {...} }\n\nclass VLCAdapter implements MediaPlayer {\n    private VLCPlayer vlc = new VLCPlayer();\n    public void play(String file) { vlc.playVLC(file); }\n}"
-            },
-            "interview_questions": ["Adapter vs Facade — what is the difference?"]
-        }
-    },
-    {
-        "slug": "decorator-pattern",
-        "topic_slug": "structural-patterns",
-        "name": "Decorator Pattern",
-        "category": ConceptCategory.STRUCTURAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Attaches additional responsibilities to an object dynamically.",
-        "order_index": 19,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "Decorator wraps an object to extend its behaviour without subclassing. Each decorator adds a layer — like wrapping gift boxes. Java I/O streams are a classic example.",
-            "key_points": ["Wraps the original object", "Same interface as wrapped object", "Composable", "Alternative to subclassing for extension"],
-            "code_example": {
-                "language": "java",
-                "good": "interface Coffee { double cost(); }\nclass BasicCoffee implements Coffee { public double cost() { return 1.0; } }\nclass MilkDecorator implements Coffee {\n    private Coffee coffee;\n    public MilkDecorator(Coffee c) { this.coffee = c; }\n    public double cost() { return coffee.cost() + 0.5; }\n}"
-            },
-            "interview_questions": ["How does Decorator differ from inheritance?"]
-        }
-    },
-    {
-        "slug": "facade-pattern",
-        "topic_slug": "structural-patterns",
-        "name": "Facade Pattern",
-        "category": ConceptCategory.STRUCTURAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Provides a simplified interface to a complex subsystem.",
-        "order_index": 20,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 12,
-        "content": {
-            "explanation": "Facade hides the complexity of a subsystem behind a simple interface. Clients use the facade instead of calling multiple subsystem classes directly.",
-            "analogy": "A hotel concierge — you say 'book me a taxi', and the concierge handles the taxi company, payment, and timing.",
-            "key_points": ["Simplifies client code", "Reduces subsystem coupling", "Doesn't prevent direct subsystem access"],
-            "interview_questions": ["When would you NOT use a Facade?"]
-        }
-    },
+{"slug":"interfaces-and-composition","topic_slug":"oop-foundation","name":"Interfaces & Composition","category":ConceptCategory.OOP,"difficulty":DifficultyLevel.BEGINNER,"order_index":6,"mastery_threshold":72.0,"estimated_minutes":18,
+"description":"Favour composition over inheritance — build complex objects by combining simpler ones.",
+"content":{"explanation":"Composition means an object CONTAINS other objects rather than inheriting from them.","analogy":"A smartphone HAS-A camera, HAS-A GPS, HAS-A phone module. You can swap the camera (12MP→108MP) without rebuilding the phone.","real_world_example":"OrderProcessor CONTAINS PaymentProcessor, NotificationService, InventoryService as dependencies. Swap SMSNotification with PushNotification without touching OrderProcessor.","code_example":{"language":"java","bad":"class OrderProcessor extends PaymentProcessor {}","good":"class OrderProcessor {\n  private final PaymentProcessor payment;\n  private final NotificationService notifier;\n  OrderProcessor(PaymentProcessor p, NotificationService n) {\n    this.payment=p; this.notifier=n;\n  }\n}"},"interview_questions":["Why prefer composition over inheritance?","What is the difference between association, aggregation, and composition?"]}},
 
-    # ── BEHAVIORAL PATTERNS ───────────────────────────────────────────────
-    {
-        "slug": "strategy-pattern",
-        "topic_slug": "behavioral-patterns",
-        "name": "Strategy Pattern",
-        "category": ConceptCategory.BEHAVIORAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Defines a family of algorithms, encapsulates each one, and makes them interchangeable.",
-        "order_index": 21,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "Strategy encapsulates an algorithm behind an interface. The context object holds a reference to a strategy and delegates algorithm execution to it. This is the classic OCP implementation.",
-            "analogy": "A navigation app — you choose 'fastest', 'shortest', or 'avoid tolls' route strategy without changing the app core.",
-            "key_points": ["Encapsulates algorithms", "Runtime-swappable", "Eliminates if-else chains", "Used in sorting, payment processing, compression"],
-            "code_example": {
-                "language": "java",
-                "good": "interface SortStrategy { void sort(int[] arr); }\nclass QuickSort implements SortStrategy {...}\nclass MergeSort implements SortStrategy {...}\n\nclass Sorter {\n    private SortStrategy strategy;\n    public Sorter(SortStrategy s) { strategy = s; }\n    public void sort(int[] arr) { strategy.sort(arr); }\n}"
-            },
-            "interview_questions": ["How does Strategy relate to OCP?", "Strategy vs State — what is the difference?"]
-        }
-    },
-    {
-        "slug": "observer-pattern",
-        "topic_slug": "behavioral-patterns",
-        "name": "Observer Pattern",
-        "category": ConceptCategory.BEHAVIORAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Defines a one-to-many dependency so when one object changes state, all dependents are notified.",
-        "order_index": 22,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "Observer (publish-subscribe) lets a subject maintain a list of observers and notifies them automatically of state changes. Foundation of event systems, MVC, reactive programming.",
-            "analogy": "A YouTube channel — subscribers (observers) are notified when the channel (subject) uploads a new video.",
-            "key_points": ["Subject maintains observer list", "Push vs pull notification", "Loose coupling between subject and observers", "Basis of event-driven architecture"],
-            "code_example": {
-                "language": "java",
-                "good": "interface Observer { void update(Event event); }\nclass EventBus {\n    private List<Observer> observers = new ArrayList<>();\n    public void subscribe(Observer o) { observers.add(o); }\n    public void publish(Event e) { observers.forEach(o -> o.update(e)); }\n}"
-            },
-            "interview_questions": ["How does Observer relate to event-driven architecture?", "What is the difference between push and pull Observer?"]
-        }
-    },
-    {
-        "slug": "command-pattern",
-        "topic_slug": "behavioral-patterns",
-        "name": "Command Pattern",
-        "category": ConceptCategory.BEHAVIORAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Encapsulates a request as an object, allowing undo/redo, queuing, and logging of operations.",
-        "order_index": 23,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "Command turns operations into objects. Each command encapsulates a receiver and the action to perform. This allows undo stacks, job queues, and transaction logs.",
-            "key_points": ["Encapsulates operations as objects", "Supports undo/redo", "Enables job queuing", "Decouples invoker from receiver"],
-            "interview_questions": ["Where is the Command pattern used in real systems?"]
-        }
-    },
-    {
-        "slug": "state-pattern",
-        "topic_slug": "behavioral-patterns",
-        "name": "State Pattern",
-        "category": ConceptCategory.BEHAVIORAL_PATTERNS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Allows an object to alter its behaviour when its internal state changes.",
-        "order_index": 24,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 18,
-        "content": {
-            "explanation": "State pattern externalises state-specific behaviour into separate classes. The context delegates to its current state object. Eliminates large if/switch on state.",
-            "analogy": "A vending machine behaves differently when idle, when money is inserted, when item is dispensing.",
-            "key_points": ["State objects encapsulate behaviour", "Context delegates to current state", "Clean state transitions", "Used in order workflows, TCP connections"],
-            "interview_questions": ["State vs Strategy — when to use which?"]
-        }
-    },
+# ══════════════════════════════════════════════════════════════════════════════
+# LLD — SOLID
+# ══════════════════════════════════════════════════════════════════════════════
+{"slug":"single-responsibility","topic_slug":"solid-principles","name":"Single Responsibility Principle","category":ConceptCategory.SOLID,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":7,"mastery_threshold":75.0,"estimated_minutes":15,
+"description":"A class should have only one reason to change.",
+"content":{"explanation":"SRP: every class does one thing. Multiple responsibilities = multiple reasons to change = higher risk of breaking unrelated functionality.","analogy":"In a restaurant: chef cooks, waiter serves, cashier handles payment. If the chef also manages billing, a tax-rate change forces changes to the chef's workflow — unrelated to cooking.","real_world_example":"UserController should NOT also send emails AND hash passwords AND write audit logs. Split: UserController (HTTP handling), UserService (business logic), EmailService (sending), AuditLogger (logging).","code_example":{"language":"java","bad":"class UserService {\n  void register(User u){}\n  void sendWelcomeEmail(User u){}\n  void saveToDatabase(User u){}\n  void generateAuditLog(User u){}\n}","good":"class UserRegistration { void register(User u){} }\nclass EmailService { void sendWelcome(User u){} }\nclass UserRepository { void save(User u){} }\nclass AuditLogger { void log(String action){} }"},"interview_questions":["How do you identify SRP violations?","What is cohesion and how does it relate to SRP?"]}},
 
-    # ── LLD PROBLEMS ──────────────────────────────────────────────────────
-    {
-        "slug": "lld-parking-lot",
-        "topic_slug": "lld-problems",
-        "name": "Design: Parking Lot",
-        "category": ConceptCategory.LLD_PROBLEMS,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Design a multi-floor parking lot system with vehicle types and ticket management.",
-        "order_index": 25,
-        "mastery_threshold": 70.0,
-        "estimated_minutes": 45,
-        "content": {
-            "problem_statement": "Design a parking lot system that supports multiple floors, multiple spot sizes (compact, large, handicapped), different vehicle types, and ticket-based entry/exit.",
-            "entities": ["ParkingLot", "ParkingFloor", "ParkingSpot", "Vehicle", "Car", "Bike", "Truck", "Ticket", "ParkingAttendant"],
-            "patterns_used": ["Factory (vehicle creation)", "Strategy (pricing)", "Singleton (ParkingLot)"],
-            "key_design_decisions": ["How to find the nearest available spot?", "How to handle multiple vehicle sizes?", "How to calculate parking fee?"],
-            "class_diagram": {
-                "Vehicle": {"type": "abstract", "fields": ["licensePlate", "vehicleType"], "children": ["Car", "Bike", "Truck"]},
-                "ParkingSpot": {"fields": ["spotId", "size", "isOccupied", "vehicle"]},
-                "ParkingFloor": {"fields": ["floorId", "spots: List<ParkingSpot>"], "methods": ["findAvailableSpot(vehicleType)"]},
-                "ParkingLot": {"fields": ["floors: List<ParkingFloor>"], "methods": ["park(vehicle)", "unpark(ticket)"]}
-            }
-        }
-    },
-    {
-        "slug": "lld-elevator",
-        "topic_slug": "lld-problems",
-        "name": "Design: Elevator System",
-        "category": ConceptCategory.LLD_PROBLEMS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Design an elevator control system for a multi-floor building.",
-        "order_index": 26,
-        "mastery_threshold": 72.0,
-        "estimated_minutes": 50,
-        "content": {
-            "problem_statement": "Design an elevator system for a building with N floors and K elevators. Handle requests from floors and inside elevators efficiently.",
-            "entities": ["ElevatorSystem", "Elevator", "Request", "ElevatorController", "Door"],
-            "patterns_used": ["State (elevator states: IDLE, MOVING_UP, MOVING_DOWN, OPEN)", "Strategy (scheduling: FCFS, SCAN)", "Observer (floor requests)"],
-            "key_design_decisions": ["Which scheduling algorithm to use?", "How to handle simultaneous requests?", "How to model elevator state machine?"]
-        }
-    },
-    {
-        "slug": "lld-splitwise",
-        "topic_slug": "lld-problems",
-        "name": "Design: Splitwise",
-        "category": ConceptCategory.LLD_PROBLEMS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Design an expense splitting application.",
-        "order_index": 27,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 60,
-        "content": {
-            "problem_statement": "Design Splitwise — track expenses among a group of friends, support equal/exact/percentage splits, and calculate net balances.",
-            "entities": ["User", "Group", "Expense", "Split", "Balance"],
-            "patterns_used": ["Strategy (split types)", "Observer (notifications)"],
-            "key_design_decisions": ["How to minimise the number of transactions to settle all debts?", "How to handle group vs individual expenses?"]
-        }
-    },
+{"slug":"open-closed","topic_slug":"solid-principles","name":"Open/Closed Principle","category":ConceptCategory.SOLID,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":8,"mastery_threshold":75.0,"estimated_minutes":15,
+"description":"Open for extension, closed for modification.",
+"content":{"explanation":"Add new features by adding new code, not editing existing tested code.","analogy":"A power strip is closed for modification (no rewiring). Open for extension — plug in new devices without changing the strip.","real_world_example":"Swiggy discount system: adding FestivalDiscount should NOT require editing DiscountCalculator. Add new FestivalDiscount class implementing DiscountStrategy. Calculator works with any strategy.","code_example":{"language":"java","bad":"class Calc {\n  double calc(String type, double price) {\n    if(type.equals(\"STUDENT\")) return price*0.8;\n    if(type.equals(\"FESTIVAL\")) return price*0.7; // Keep editing!\n  }\n}","good":"interface DiscountStrategy { double apply(double price); }\nclass StudentDiscount implements DiscountStrategy{}\nclass FestivalDiscount implements DiscountStrategy{}\n// Adding NewYearDiscount = new class, zero changes to Calc"},"interview_questions":["How does OCP relate to Strategy pattern?","Can OCP be over-applied?"]}},
 
-    # ── HLD: SYSTEM DESIGN BASICS ────────────────────────────────────────
-    {
-        "slug": "system-design-fundamentals",
-        "topic_slug": "system-design-basics",
-        "name": "System Design Fundamentals",
-        "category": ConceptCategory.SYSTEM_DESIGN_BASICS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Functional vs non-functional requirements, scalability, availability, reliability.",
-        "order_index": 28,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "System design starts with understanding requirements. Functional requirements define what the system does; non-functional requirements define how well it does it.",
-            "key_concepts": {
-                "scalability": "Ability to handle growing load by adding resources",
-                "availability": "Percentage of time system is operational (99.9% = 8.7 hours downtime/year)",
-                "reliability": "Probability system performs correctly over a time period",
-                "latency": "Time to complete a single request",
-                "throughput": "Requests per second the system can handle"
-            },
-            "interview_questions": ["What is the difference between availability and reliability?", "How do you estimate scale for a system design problem?"]
-        }
-    },
-    {
-        "slug": "networking-basics",
-        "topic_slug": "networking",
-        "name": "Networking for System Design",
-        "category": ConceptCategory.NETWORKING,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "HTTP, TCP/IP, DNS, REST APIs, WebSockets.",
-        "order_index": 29,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 25,
-        "content": {
-            "explanation": "Understanding networking is essential for HLD. Know how HTTP/HTTPS works, what DNS does, the difference between TCP and UDP, and when to use REST vs WebSockets.",
-            "key_concepts": {
-                "http": "Stateless request-response protocol on top of TCP",
-                "https": "HTTP with TLS encryption",
-                "tcp": "Reliable, ordered, connection-oriented (three-way handshake)",
-                "udp": "Fast, unreliable, connectionless",
-                "dns": "Translates domain names to IP addresses",
-                "rest": "Architectural style using HTTP verbs for resource operations",
-                "websockets": "Full-duplex persistent connection for real-time communication"
-            },
-            "interview_questions": ["When would you use WebSockets over HTTP polling?", "What happens when you type a URL in a browser?"]
-        }
-    },
-    {
-        "slug": "sql-databases",
-        "topic_slug": "databases",
-        "name": "SQL Databases",
-        "category": ConceptCategory.DATABASES,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Relational databases, ACID, indexes, transactions, normalization.",
-        "order_index": 30,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 30,
-        "content": {
-            "explanation": "Relational databases store data in tables with strict schemas. ACID properties guarantee correctness. Indexes speed up queries. Transactions group operations atomically.",
-            "key_concepts": {
-                "ACID": "Atomicity, Consistency, Isolation, Durability",
-                "indexes": "B-tree or hash structures that speed up reads at the cost of write overhead",
-                "joins": "Combine rows from multiple tables based on related columns",
-                "normalization": "Eliminate data redundancy by organising data into separate tables",
-                "transactions": "Group of operations that succeed or fail together"
-            },
-            "interview_questions": ["When would you denormalize a schema?", "What is a covering index?"]
-        }
-    },
-    {
-        "slug": "nosql-databases",
-        "topic_slug": "databases",
-        "name": "NoSQL Databases",
-        "category": ConceptCategory.DATABASES,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Document, key-value, wide-column, and graph databases. When to choose NoSQL.",
-        "order_index": 31,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 25,
-        "content": {
-            "explanation": "NoSQL databases sacrifice some ACID guarantees for horizontal scalability, flexibility, and performance. Different types suit different use cases.",
-            "key_concepts": {
-                "document": "MongoDB — flexible JSON documents, good for hierarchical data",
-                "key-value": "Redis, DynamoDB — fast lookup by key",
-                "wide-column": "Cassandra, HBase — time-series, write-heavy workloads",
-                "graph": "Neo4j — relationship-heavy data",
-                "BASE": "Basically Available, Soft state, Eventually consistent"
-            },
-            "interview_questions": ["When would you choose MongoDB over PostgreSQL?", "What is eventual consistency?"]
-        }
-    },
-    {
-        "slug": "caching-fundamentals",
-        "topic_slug": "caching",
-        "name": "Caching Fundamentals",
-        "category": ConceptCategory.CACHING,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Cache strategies, Redis, cache invalidation, eviction policies.",
-        "order_index": 32,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 25,
-        "content": {
-            "explanation": "Caching stores frequently accessed data in fast storage (memory) to reduce database load and latency. Redis is the most popular distributed cache.",
-            "key_concepts": {
-                "cache-aside": "App reads cache first; on miss, reads DB and populates cache",
-                "write-through": "Write to cache and DB simultaneously",
-                "write-back": "Write to cache only; async flush to DB (risk of data loss)",
-                "eviction_policies": "LRU (Least Recently Used), LFU, TTL-based",
-                "cache_invalidation": "How to keep cache consistent with DB (hardest problem in CS joke)"
-            },
-            "interview_questions": ["When should you NOT use caching?", "How do you handle cache invalidation in a distributed system?"]
-        }
-    },
-    {
-        "slug": "cap-theorem",
-        "topic_slug": "distributed-systems",
-        "name": "CAP Theorem & Distributed Consistency",
-        "category": ConceptCategory.DISTRIBUTED_SYSTEMS,
-        "difficulty": DifficultyLevel.ADVANCED,
-        "description": "CAP theorem, consistency models, eventual consistency, distributed transactions.",
-        "order_index": 33,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 30,
-        "content": {
-            "explanation": "CAP theorem states that a distributed system can only guarantee two of three: Consistency, Availability, Partition Tolerance. In practice, P is unavoidable, so you choose between C and A.",
-            "key_concepts": {
-                "consistency": "Every read returns the most recent write",
-                "availability": "Every request gets a response (not necessarily most recent data)",
-                "partition_tolerance": "System continues despite network partitions",
-                "CP_systems": "HBase, Zookeeper, etcd — sacrifice availability for consistency",
-                "AP_systems": "Cassandra, CouchDB — sacrifice consistency for availability"
-            },
-            "interview_questions": ["Where does DynamoDB sit in the CAP theorem?", "What is the PACELC extension to CAP?"]
-        }
-    },
-    {
-        "slug": "horizontal-scaling",
-        "topic_slug": "distributed-systems",
-        "name": "Scaling: Horizontal vs Vertical",
-        "category": ConceptCategory.DISTRIBUTED_SYSTEMS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Vertical scaling, horizontal scaling, sharding, replication, partitioning.",
-        "order_index": 34,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "Vertical scaling (scale up) means adding more resources to a single machine. Horizontal scaling (scale out) means adding more machines. Most large-scale systems scale horizontally.",
-            "key_concepts": {
-                "replication": "Copies of data on multiple nodes for read scaling and HA",
-                "sharding": "Split data across nodes based on a shard key",
-                "consistent_hashing": "Distribute data across nodes with minimal reshuffling when nodes are added/removed",
-                "load_balancer": "Distribute traffic across multiple app server instances"
-            },
-            "interview_questions": ["What are the trade-offs of sharding?", "How does consistent hashing work?"]
-        }
-    },
-    {
-        "slug": "message-queues",
-        "topic_slug": "hld-components",
-        "name": "Message Queues & Kafka",
-        "category": ConceptCategory.HLD_COMPONENTS,
-        "difficulty": DifficultyLevel.ADVANCED,
-        "description": "Async communication, Kafka, RabbitMQ, pub-sub, event streaming.",
-        "order_index": 35,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 30,
-        "content": {
-            "explanation": "Message queues decouple producers from consumers and enable async processing. Kafka is a distributed event streaming platform used for high-throughput, fault-tolerant pipelines.",
-            "key_concepts": {
-                "producer_consumer": "Producers publish messages, consumers read at their own pace",
-                "topics_partitions": "Kafka organises messages in topics, split into partitions for parallelism",
-                "consumer_groups": "Multiple consumers in a group share partition workload",
-                "at_least_once": "vs at-most-once vs exactly-once delivery semantics"
-            },
-            "interview_questions": ["When would you use Kafka vs RabbitMQ?", "How does Kafka guarantee ordering?"]
-        }
-    },
-    {
-        "slug": "load-balancing",
-        "topic_slug": "hld-components",
-        "name": "Load Balancing & API Gateway",
-        "category": ConceptCategory.HLD_COMPONENTS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Layer 4/7 load balancers, algorithms, API gateway, rate limiting.",
-        "order_index": 36,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 20,
-        "content": {
-            "explanation": "A load balancer distributes incoming requests across multiple servers to improve throughput and availability. An API gateway sits in front of microservices and handles auth, routing, rate limiting.",
-            "key_concepts": {
-                "L4_LB": "Routes based on IP/TCP (faster but less flexible)",
-                "L7_LB": "Routes based on HTTP content (smarter, can inspect URLs/headers)",
-                "algorithms": "Round-robin, least connections, IP hash, weighted",
-                "api_gateway": "Single entry point: handles auth, routing, rate limiting, logging"
-            },
-            "interview_questions": ["What is the difference between a load balancer and an API gateway?"]
-        }
-    },
+{"slug":"liskov-substitution","topic_slug":"solid-principles","name":"Liskov Substitution Principle","category":ConceptCategory.SOLID,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":9,"mastery_threshold":75.0,"estimated_minutes":15,
+"description":"Subclasses must be substitutable for their parent without breaking the program.",
+"content":{"explanation":"If code works with a parent type, it must work correctly when any subclass is substituted.","real_world_example":"Classic violation: Square extends Rectangle. Rectangle.setWidth(5), setHeight(10) → area should be 50. Square overrides both setters to keep sides equal → area is 100. Square breaks Rectangle's contract.","interview_questions":["Give a real-world LSP violation example.","How does LSP relate to polymorphism?"]}},
 
-    # ── HLD PROBLEMS ──────────────────────────────────────────────────────
-    {
-        "slug": "hld-url-shortener",
-        "topic_slug": "hld-problems",
-        "name": "Design: URL Shortener",
-        "category": ConceptCategory.HLD_PROBLEMS,
-        "difficulty": DifficultyLevel.BEGINNER,
-        "description": "Design a system like bit.ly that shortens URLs and redirects users.",
-        "order_index": 37,
-        "mastery_threshold": 75.0,
-        "estimated_minutes": 60,
-        "content": {
-            "problem_statement": "Design a URL shortener service. 100M URLs created/day, 10B reads/day.",
-            "functional_requirements": ["Create short URL", "Redirect to original URL", "Custom aliases", "Analytics (optional)"],
-            "non_functional_requirements": ["Low latency redirects (< 10ms)", "High availability", "No single point of failure"],
-            "architecture": {
-                "flow": "Client → CDN → Load Balancer → App Servers → Cache (Redis) → DB",
-                "short_code": "Base62 encoding of an auto-increment ID (6 chars = 56B URLs)",
-                "database": "Write: relational (id, short_code, long_url, user_id, created_at); Read-heavy → cache aggressively"
-            },
-            "key_design_decisions": ["How to generate unique short codes?", "How to handle 301 vs 302 redirect?", "How to handle custom aliases?"]
-        }
-    },
-    {
-        "slug": "hld-instagram",
-        "topic_slug": "hld-problems",
-        "name": "Design: Instagram",
-        "category": ConceptCategory.HLD_PROBLEMS,
-        "difficulty": DifficultyLevel.INTERMEDIATE,
-        "description": "Design a photo sharing social platform at scale.",
-        "order_index": 38,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 90,
-        "content": {
-            "problem_statement": "Design Instagram — users can upload photos, follow others, and view a personalised feed.",
-            "scale": "500M DAU, 100M photos/day, 4.2B likes/day",
-            "architecture": {
-                "upload_flow": "Client → API Gateway → Upload Service → Object Storage (S3) → CDN",
-                "feed_generation": "Pull model (compute on read) vs Push model (fanout on write). For celebrities: hybrid.",
-                "database": "User/Follow data: PostgreSQL; Photos metadata: Cassandra; Feed cache: Redis sorted sets"
-            },
-            "key_components": ["CDN for media", "Object Storage", "News Feed Service", "Notification Service"],
-            "trade_offs": ["Push vs pull feed", "Consistency vs availability for likes", "Storage costs"]
-        }
-    },
-    {
-        "slug": "hld-rate-limiter",
-        "topic_slug": "hld-problems",
-        "name": "Design: Rate Limiter",
-        "category": ConceptCategory.HLD_PROBLEMS,
-        "difficulty": DifficultyLevel.ADVANCED,
-        "description": "Design a distributed rate limiter.",
-        "order_index": 39,
-        "mastery_threshold": 77.0,
-        "estimated_minutes": 60,
-        "content": {
-            "problem_statement": "Design a rate limiter that limits requests per user/IP. Must work in a distributed environment.",
-            "algorithms": {
-                "token_bucket": "Tokens added at fixed rate; request consumes a token. Allows bursts.",
-                "leaky_bucket": "Queue processes at fixed rate. Smooths bursts.",
-                "sliding_window_log": "Track request timestamps; count in last N seconds.",
-                "sliding_window_counter": "Approximate sliding window using two fixed windows."
-            },
-            "distributed_implementation": "Redis + Lua script for atomic increment; Redis Sorted Sets for sliding window log.",
-            "key_design_decisions": ["Which algorithm?", "Where to enforce (API Gateway vs middleware)?", "How to handle race conditions?"]
-        }
-    },
+{"slug":"interface-segregation","topic_slug":"solid-principles","name":"Interface Segregation Principle","category":ConceptCategory.SOLID,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":10,"mastery_threshold":75.0,"estimated_minutes":12,
+"description":"Clients should not be forced to depend on interfaces they do not use.",
+"content":{"explanation":"Keep interfaces small and focused. Fat interfaces force implementors to provide irrelevant no-op methods.","real_world_example":"UserPermissions with deleteUsers(), manageServers(), editContent(), viewContent(). Viewer must implement deleteUsers() throwing UnsupportedOperation. Fix: split into ViewerPermissions, EditorPermissions, AdminPermissions.","interview_questions":["How does ISP help with unit testing?","How is ISP related to SRP?"]}},
+
+{"slug":"dependency-inversion","topic_slug":"solid-principles","name":"Dependency Inversion Principle","category":ConceptCategory.SOLID,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":11,"mastery_threshold":75.0,"estimated_minutes":18,
+"description":"High-level modules should not depend on low-level modules. Both should depend on abstractions.",
+"content":{"explanation":"DIP inverts dependency direction. OrderService should depend on OrderRepository interface, not MySQLRepository directly.","analogy":"An electrical socket doesn't depend on a specific phone charger brand. Both depend on the standard 2-pin interface. Plug any charger without rewiring.","real_world_example":"NotificationService should NOT import SendGridClient directly. Depend on EmailProvider interface. Swap SendGrid → AWS SES without touching NotificationService. Inject MockEmailProvider in tests.","code_example":{"language":"java","bad":"class NotificationService {\n  private SendGridClient client = new SendGridClient();\n}","good":"interface EmailProvider { void send(String to, String subj, String body); }\nclass NotificationService {\n  private final EmailProvider provider;\n  NotificationService(EmailProvider p) { this.provider=p; }\n}"},"interview_questions":["Difference between DIP and Dependency Injection?","How does DIP enable unit testing?"]}},
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LLD — DESIGN PRINCIPLES
+# ══════════════════════════════════════════════════════════════════════════════
+{"slug":"dry-kiss-yagni","topic_slug":"design-principles","name":"DRY, KISS, YAGNI & Clean Code","category":ConceptCategory.DESIGN_PRINCIPLES,"difficulty":DifficultyLevel.BEGINNER,"order_index":12,"mastery_threshold":70.0,"estimated_minutes":18,
+"description":"Don't Repeat Yourself, Keep It Simple, You Aren't Gonna Need It, and clean code basics.",
+"content":{"explanation":"DRY: single source of truth. KISS: simplest solution that works. YAGNI: don't build what you don't need yet. Clean code: meaningful names, small functions, no magic numbers.","real_world_example":"DRY: GST calculation in one GSTCalculator class — not copied in OrderService, InvoiceService, CartService. Rate change → one edit. YAGNI: startup building simple monolith. Colleague says 'add Kubernetes now for future scale'. YAGNI says: don't. Premature optimisation is the root of over-engineered systems.","interview_questions":["Can over-applying DRY cause problems?","When does YAGNI conflict with planning for scale?"]}},
+
+{"slug":"dependency-injection","topic_slug":"design-principles","name":"Dependency Injection & IoC","category":ConceptCategory.DESIGN_PRINCIPLES,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":13,"mastery_threshold":75.0,"estimated_minutes":18,
+"description":"Provide dependencies from outside a class rather than creating them internally.",
+"content":{"explanation":"DI passes dependencies into a class rather than having the class create them. IoC inverts control — a container manages object creation.","analogy":"Instead of a coffee machine grinding its own beans (tightly coupled), you provide ground coffee from outside (dependency injected). Use any brand without modifying the machine.","real_world_example":"Spring Boot @Autowired UserRepository injects the repository into UserService. In tests, inject MockUserRepository. In production, inject PostgresUserRepository. Same code, different behaviour.","code_example":{"language":"java","bad":"class OrderService {\n  private MySQLRepo repo = new MySQLRepo();\n}","good":"class OrderService {\n  private final OrderRepo repo;\n  @Autowired\n  OrderService(OrderRepo repo) { this.repo=repo; }\n}"},"interview_questions":["Difference between DI and the DIP principle?","What is an IoC container?"]}},
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LLD — DESIGN PATTERNS
+# ══════════════════════════════════════════════════════════════════════════════
+{"slug":"creational-patterns","topic_slug":"design-patterns","name":"Creational Patterns: Singleton, Factory, Builder","category":ConceptCategory.CREATIONAL_PATTERNS,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":14,"mastery_threshold":75.0,"estimated_minutes":25,
+"description":"Singleton (one instance), Factory (decouple creation), Builder (complex construction).",
+"content":{"explanation":"Creational patterns deal with object creation mechanisms.","real_world_example":"Singleton: DatabaseConnectionPool.getInstance() — one shared pool, not hundreds. Factory: StorageFactory.create('s3') returns S3Storage, .create('gcs') returns GCSStorage — client doesn't know implementation. Builder: new Request.Builder().url(...).method('POST').header(...).build() — readable step-by-step construction.","interview_questions":["How do you make Singleton thread-safe?","When would you use Abstract Factory over Factory Method?"]}},
+
+{"slug":"structural-patterns","topic_slug":"design-patterns","name":"Structural Patterns: Adapter, Decorator, Facade, Proxy","category":ConceptCategory.STRUCTURAL_PATTERNS,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":15,"mastery_threshold":75.0,"estimated_minutes":25,
+"description":"Adapter (convert interface), Decorator (add behaviour), Facade (simplify), Proxy (control access).",
+"content":{"explanation":"Structural patterns deal with object composition.","real_world_example":"Adapter: RazorpayAdapter wraps Razorpay and implements your PaymentProcessor interface. Decorator: Java BufferedInputStream(GZIPInputStream(FileInputStream)) — each decorator adds behaviour. Facade: AWS SDK s3.uploadFile(bucket, key, file) — one call hides multipart upload, retries, checksums. Proxy: Netflix CDN is a caching proxy for origin servers.","interview_questions":["Adapter vs Facade — what is the difference?","How does Proxy differ from Decorator?"]}},
+
+{"slug":"behavioral-patterns","topic_slug":"design-patterns","name":"Behavioral Patterns: Strategy, Observer, Command, State","category":ConceptCategory.BEHAVIORAL_PATTERNS,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":16,"mastery_threshold":77.0,"estimated_minutes":25,
+"description":"Strategy (swap algorithms), Observer (event notifications), Command (encapsulate operations), State (state machine).",
+"content":{"explanation":"Behavioral patterns deal with object communication and responsibility assignment.","real_world_example":"Strategy: Swiggy delivery fee — PeakHoursStrategy 2x, RainyStrategy 1.5x, NormalStrategy base. Observer: Amazon order → OrderPlaced event → EmailService, InventoryService, LoyaltyService react independently. Command: Google Docs every edit is a Command with undo(). State: Uber ride REQUESTED→ASSIGNED→EN_ROUTE→IN_TRIP→COMPLETED — different actions valid in each state.","interview_questions":["Strategy vs State — when to use which?","How does Observer relate to Kafka pub-sub?"]}},
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LLD — CASE STUDIES
+# ══════════════════════════════════════════════════════════════════════════════
+{"slug":"lld-parking-lot","topic_slug":"lld-problems","name":"Design: Parking Lot","category":ConceptCategory.LLD_PROBLEMS,"difficulty":DifficultyLevel.BEGINNER,"order_index":17,"mastery_threshold":70.0,"estimated_minutes":60,
+"description":"Multi-floor parking lot with vehicle types, spot sizes, and automated ticketing.",
+"content":{"problem_statement":"Design parking lot: multiple floors, spot sizes (compact/large/handicapped), vehicle types (car/bike/truck), ticket-based entry/exit, fee calculation.","entities":["ParkingLot","ParkingFloor","ParkingSpot","Vehicle","Car","Bike","Truck","Ticket","FeeCalculator"],"patterns_used":["Singleton (ParkingLot)","Factory (Vehicle creation)","Strategy (fee calculation)"],"real_world_example":"INOX mall automated parking: ticket shows entry time + spot number. Exit gate scans ticket, calculates fee, raises barrier.","key_design_decisions":["How to find nearest available spot?","How to make fee calculation extensible (hourly/daily/monthly)?"]}},
+
+{"slug":"lld-elevator","topic_slug":"lld-problems","name":"Design: Elevator System","category":ConceptCategory.LLD_PROBLEMS,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":18,"mastery_threshold":72.0,"estimated_minutes":60,
+"description":"Elevator control system for multi-floor building with N elevators.",
+"content":{"problem_statement":"Design elevator system: N floors, K elevators, floor requests + cabin requests, efficient scheduling.","entities":["ElevatorSystem","Elevator","ElevatorController","FloorRequest","CabinRequest","Door"],"patterns_used":["State (IDLE/MOVING_UP/MOVING_DOWN/DOOR_OPEN)","Strategy (FCFS/SCAN scheduling)","Observer (floor panel)"],"real_world_example":"Infosys Mysore campus smart elevators use SCAN algorithm — moves in one direction stopping at all requested floors, then reverses. More efficient than FCFS."}},
+
+{"slug":"lld-splitwise","topic_slug":"lld-problems","name":"Design: Splitwise","category":ConceptCategory.LLD_PROBLEMS,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":19,"mastery_threshold":75.0,"estimated_minutes":60,
+"description":"Expense splitting app: equal/exact/percentage splits, debt minimization.",
+"content":{"problem_statement":"Design Splitwise: track shared expenses, multiple split types, calculate and minimise net balances.","entities":["User","Group","Expense","EqualSplit","ExactSplit","PercentageSplit","Balance"],"patterns_used":["Strategy (split types)","Observer (notifications)"],"real_world_example":"Goa trip with 6 friends: hotel ₹12000 split equally, dinner ₹3600 by consumption, cab ₹800 split 60/40. Debt simplification algorithm minimises number of transactions to settle all debts."}},
+
+{"slug":"lld-rate-limiter","topic_slug":"lld-problems","name":"Design: Rate Limiter & Cache (LLD)","category":ConceptCategory.LLD_PROBLEMS,"difficulty":DifficultyLevel.ADVANCED,"order_index":20,"mastery_threshold":75.0,"estimated_minutes":60,
+"description":"In-memory rate limiter (token bucket, sliding window) and LRU/LFU cache.",
+"content":{"problem_statement":"Design: (1) Rate limiter — N requests per window per user. (2) LRU cache — O(1) get/put with eviction.","entities":["RateLimiter","TokenBucketLimiter","SlidingWindowLimiter","LRUCache","Node","DoublyLinkedList"],"patterns_used":["Strategy (algorithm)","Decorator (wrap any API)"],"real_world_example":"GitHub API: 60 req/hour unauthenticated, 5000/hour authenticated. LRU cache: HashMap + DoublyLinkedList — HashMap gives O(1) lookup, LinkedList gives O(1) reorder on access."}},
+
+]  # end CONCEPTS list
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HLD CONCEPTS — appended separately for readability
+# ─────────────────────────────────────────────────────────────────────────────
+HLD_CONCEPTS = [
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HLD AREA 1 — ARCHITECTURE
+# ══════════════════════════════════════════════════════════════════════════════
+
+{"slug":"arch-fundamentals","topic_slug":"arch-fundamentals","name":"System Design Fundamentals & NFRs","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.BEGINNER,"order_index":21,"mastery_threshold":72.0,"estimated_minutes":20,
+"description":"What is system design, HLD vs LLD, functional vs non-functional requirements, quality attributes.",
+"content":{"explanation":"System design = defining architecture, components, and data to satisfy requirements. NFRs define HOW WELL the system does it.","key_concepts":{"scalability":"Handle growing load — 1K users today, 10M next year","availability":"% uptime. 99.9%=8.7h/year downtime. 99.99%=52min/year","reliability":"Correctness over time — system can be available but return wrong data","latency":"Time for one request (e.g. 50ms)","throughput":"Requests per second (e.g. 10,000 RPS)","fault_tolerance":"System works despite component failures","SPOF":"Single Point of Failure — eliminate with redundancy","blast_radius":"Scope of damage when a component fails"},"real_world_example":"WhatsApp NFRs: < 1s message delivery (latency), 99.95% uptime (availability), 100B messages/day (throughput), no message loss (reliability). Each NFR drives different architecture decisions.","interview_questions":["What is the difference between availability and reliability?","How do you estimate scale for a system design problem?"]}},
+
+{"slug":"arch-tier-models","topic_slug":"arch-fundamentals","name":"2-Tier, 3-Tier, N-Tier Architecture","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.BEGINNER,"order_index":22,"mastery_threshold":70.0,"estimated_minutes":15,
+"description":"Client-server, 2-tier, 3-tier, N-tier layered architectures.",
+"content":{"explanation":"Layered architecture separates concerns into tiers. Each tier has a single responsibility and only communicates with adjacent layers.","key_concepts":{"2_tier":"Client + Database. Simple but couples UI to DB directly.","3_tier":"Presentation + Application/Business + Data. Most common web architecture.","n_tier":"Adds API layer, service layer, data access layer for large enterprise systems.","dependency_direction":"Dependencies only flow downward — Presentation depends on Business, never reverse."},"real_world_example":"Instagram: Mobile App (Presentation) → REST API (API Layer) → Business Logic Service → Repository → PostgreSQL/Cassandra (Data). Each layer independently deployable and testable.","interview_questions":["What is the difference between 3-tier and MVC?","When would you add more tiers?"]}},
+
+{"slug":"arch-monolith","topic_slug":"arch-styles","name":"Monolithic Architecture","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.BEGINNER,"order_index":23,"mastery_threshold":72.0,"estimated_minutes":15,
+"description":"Single deployable unit — monolith, modular monolith, and when to choose each.",
+"content":{"explanation":"A monolith deploys all code in one unit. Simple to start, hard to scale teams and deployment independently.","key_concepts":{"pure_monolith":"Single codebase, shared DB, one deployment — fast to build initially","modular_monolith":"Code separated by module (User, Order, Payment) but deployed as one unit — best of both worlds for small-medium teams","distributed_monolith":"Multiple services but tightly coupled — worst of both worlds, avoid this"},"real_world_example":"Amazon started as a monolith in 1994. By 2001: 300+ engineers stepping on each other, deployments took days. Migrated to microservices — each team owns their service independently.","interview_questions":["When would you choose a monolith over microservices?","What is a modular monolith?"]}},
+
+{"slug":"arch-microservices","topic_slug":"arch-styles","name":"Microservices Architecture","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":24,"mastery_threshold":77.0,"estimated_minutes":25,
+"description":"Independent services with their own deployments, databases, and teams.",
+"content":{"explanation":"Microservices decompose a system into small, independently deployable services aligned with business capabilities.","key_concepts":{"service_boundary":"Bounded context — UserService, OrderService, PaymentService each own their domain","database_per_service":"Each service has its own DB — prevents tight coupling through shared schema","independent_deployment":"Deploy PaymentService without touching OrderService","service_communication":"REST or gRPC for sync, Kafka/RabbitMQ for async"},"real_world_example":"Netflix has 1000+ microservices. Each team deploys 100s of times/day independently. Recommendation Service, Streaming Service, Billing Service all independently scalable and deployable.","interview_questions":["What problems does microservices solve? What problems does it create?","What is a bounded context?"]}},
+
+{"slug":"arch-event-driven","topic_slug":"arch-styles","name":"Event-Driven Architecture","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":25,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"Loose coupling through events — producers emit, consumers react asynchronously.",
+"content":{"explanation":"EDA decouples services. When OrderService creates order, it publishes OrderCreated event. Multiple services react independently without knowing about each other.","key_concepts":{"event":"Immutable record of something that happened","producer":"Emits events without knowing who consumes them","consumer":"Reacts to events it cares about","broker":"Kafka, RabbitMQ — routes events between producers and consumers","choreography":"Services react to events autonomously","orchestration":"Central orchestrator tells services what to do"},"real_world_example":"Flipkart Flash Sale: you click Buy Now → OrderService publishes OrderPlaced to Kafka. Simultaneously: PaymentService charges card, InventoryService decrements stock, ShippingService creates shipment, NotificationService sends SMS. All async — no service waits for others.","interview_questions":["Event-driven vs synchronous — trade-offs?","What is the difference between choreography and orchestration?"]}},
+
+{"slug":"arch-serverless","topic_slug":"arch-styles","name":"Serverless Architecture","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":26,"mastery_threshold":72.0,"estimated_minutes":15,
+"description":"FaaS, managed services, cold starts, auto-scaling, pay-per-invocation.",
+"content":{"explanation":"Serverless: no server management. You write functions, cloud runs them. Auto-scales to zero and back.","key_concepts":{"faas":"Function as a Service — AWS Lambda, GCP Cloud Run, Azure Functions","cold_start":"First invocation spins up container — adds 100-500ms latency","warm_start":"Function already loaded — fast execution","event_triggers":"HTTP request, S3 upload, Kafka message, scheduled cron"},"real_world_example":"Zomato uses Lambda for: image resizing on menu photo upload, scheduled data cleanup, webhook processing. Scales from 0 to 10,000 concurrent executions in seconds. Costs nothing when idle.","aws_specific":"AWS Lambda (15 min max runtime). API Gateway + Lambda = serverless REST API. SAM or CDK for infrastructure as code.","interview_questions":["When would serverless be a bad choice?","How do you handle cold starts in production?"]}},
+
+{"slug":"arch-clean-hexagonal","topic_slug":"arch-styles","name":"Clean, Hexagonal & Onion Architecture","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.ADVANCED,"order_index":27,"mastery_threshold":72.0,"estimated_minutes":20,
+"description":"Dependency rule, ports & adapters, domain-centric design.",
+"content":{"explanation":"These architectures put the domain/business logic at the centre and dependencies flow inward — infrastructure depends on domain, never reverse.","key_concepts":{"clean_arch":"Layers: Entities → Use Cases → Interface Adapters → Frameworks. Dependency rule: inner layers know nothing about outer layers.","hexagonal":"Domain in centre. Ports define interfaces. Adapters implement them (REST adapter, DB adapter, Kafka adapter).","onion":"Domain → Application Services → Infrastructure. Nothing in inner rings imports outer rings."},"real_world_example":"In a payment service using Clean Architecture: PaymentUseCase (inner) doesn't import Stripe SDK (outer). It uses PaymentGatewayPort interface. StripeAdapter implements that port. Swap Stripe → Razorpay by creating RazorpayAdapter — zero changes to business logic.","interview_questions":["What is the dependency rule in Clean Architecture?","How does hexagonal architecture differ from layered architecture?"]}},
+
+{"slug":"arch-scalability","topic_slug":"arch-fundamentals","name":"Scalability Architecture Patterns","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":28,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"Vertical/horizontal scaling, stateless services, auto-scaling, load balancing.",
+"content":{"explanation":"Scalability = handling growing load. Vertical scaling has limits. Horizontal scaling requires stateless services.","key_concepts":{"vertical":"Add CPU/RAM to existing server. Simple but hardware limits apply.","horizontal":"Add more servers. Unlimited but requires stateless design.","stateless":"Server holds no user session — any request can go to any server.","auto_scaling":"Cloud monitors CPU/requests and adds/removes servers automatically."},"real_world_example":"Hotstar IPL Final: 25M concurrent viewers. Normal: 10 servers. During match start: Auto Scaling adds 500 servers in 10 minutes based on CPU > 70% policy. Post-match: scales back to 10. Pay only for what you use.","aws_specific":"EC2 Auto Scaling Groups: target tracking (keep CPU at 60%), step scaling (add 2 when CPU > 70%), scheduled scaling (add 100 before IPL final). Combine with ALB for traffic distribution.","interview_questions":["What makes a service stateless?","How would you handle a sudden 10x traffic spike?"]}},
+
+{"slug":"arch-ha-fault-tolerance","topic_slug":"arch-deployment","name":"High Availability & Fault Tolerance","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":29,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"Redundancy, failover, active-active, active-passive, health checks, graceful degradation.",
+"content":{"explanation":"HA systems assume failures WILL happen and design for recovery. Fault tolerance = continue working despite failures.","key_concepts":{"active_active":"Multiple nodes all serving traffic. If one fails, others absorb load.","active_passive":"Primary serves traffic, secondary on standby. Failover on primary failure.","health_checks":"Load balancer pings /health every 30s — removes unhealthy instances from rotation.","graceful_degradation":"If RecommendationService is down, show generic recommendations — don't fail checkout.","circuit_breaker":"After N failures, stop calling the broken service. Return fallback. Retry after timeout."},"real_world_example":"Amazon checkout: if RecommendationService returns errors for 5 seconds, Circuit Breaker opens — shows default recommendations instead of crashing. Health checks remove failed servers in 30s. Multi-AZ RDS automatically fails over to replica in 60-120s.","interview_questions":["What is the difference between RTO and RPO?","When would you choose active-active over active-passive?"]}},
+
+{"slug":"arch-deployment-patterns","topic_slug":"arch-deployment","name":"Deployment Strategies","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":30,"mastery_threshold":72.0,"estimated_minutes":15,
+"description":"Blue-green, canary, rolling, shadow deployments.",
+"content":{"explanation":"Different deployment strategies balance speed, risk, and rollback capability.","key_concepts":{"blue_green":"Two identical environments. Switch traffic from Blue to Green. Instant rollback by switching back.","canary":"Deploy to 5% of users first. Monitor. Gradually increase to 100%. Catch bugs before full rollout.","rolling":"Replace instances one by one. No downtime, but two versions live simultaneously.","shadow":"Route traffic to new version but discard responses — test without user impact."},"real_world_example":"Netflix uses canary deployments: new streaming service version deployed to 1% of users (canary). Monitor error rates and latency. If metrics look good, expand to 10%, 50%, 100%. If bad, instant rollback. This is how Netflix deploys 100+ times/day safely.","interview_questions":["When would you use canary over blue-green?","How do you handle database schema changes during rolling deployments?"]}},
+
+{"slug":"arch-api-gateway","topic_slug":"arch-patterns","name":"API Gateway & Service Discovery","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":31,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"Single entry point, routing, auth, rate limiting, service registry.",
+"content":{"explanation":"API Gateway is the single entry point for all client requests. Service Discovery lets services find each other dynamically.","key_concepts":{"api_gateway":"Routes to correct service, handles auth, rate limiting, logging, response transformation","bff":"Backend For Frontend — separate gateway for mobile vs web with different response shapes","service_registry":"Services register on startup (Eureka, Consul). Others discover by querying registry.","client_side_discovery":"Service queries registry and calls directly.","server_side_discovery":"Load balancer queries registry and routes."},"real_world_example":"Uber API Gateway: mobile app makes one call. Gateway authenticates JWT, rate limits (100 req/min), routes to DriverService, RideService, or PaymentService based on path. Converts to gRPC for internal calls.","aws_specific":"AWS API Gateway + Lambda = serverless microservice. Amazon API Gateway handles auth (Cognito), rate limiting, caching, and monitoring automatically.","interview_questions":["What is the difference between API Gateway and load balancer?","What is BFF pattern and when do you use it?"]}},
+
+{"slug":"arch-saga-cqrs","topic_slug":"arch-patterns","name":"Saga, CQRS & Event Sourcing","category":ConceptCategory.ARCHITECTURE,"difficulty":DifficultyLevel.ADVANCED,"order_index":32,"mastery_threshold":75.0,"estimated_minutes":25,
+"description":"Distributed transactions via saga, separate read/write models with CQRS, state as event log.",
+"content":{"explanation":"Saga handles distributed transactions without 2PC. CQRS separates reads from writes for performance. Event Sourcing stores state as events.","key_concepts":{"saga":"Sequence of local transactions. On failure, compensating transactions undo previous steps.","choreography_saga":"Each service publishes events and reacts to others. No central coordinator.","orchestration_saga":"Central orchestrator tells each service what to do. Simpler to reason about.","cqrs":"Command side writes to write DB. Query side reads from read-optimised DB. Eventual consistency between them.","event_sourcing":"Store events (AccountOpened, Deposited, Withdrew) not current state. Replay to get current state. Full audit trail."},"real_world_example":"MakeMyTrip flight+hotel+cab booking: Saga — if cab fails after flight succeeds, compensating transaction cancels flight. CQRS in Instagram: writes go to Cassandra, reads from pre-computed feed in Redis — 100x faster reads at cost of eventual consistency.","interview_questions":["What is the difference between 2PC and Saga?","What are the trade-offs of event sourcing?"]}},
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HLD AREA 2 — NETWORKING & APIs
+# ══════════════════════════════════════════════════════════════════════════════
+
+{"slug":"net-ip-dns","topic_slug":"net-fundamentals","name":"IP, DNS & Network Fundamentals","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":33,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"IPv4/IPv6, DNS resolution, NAT, CDN, latency vs bandwidth.",
+"content":{"explanation":"Every system design problem involves networking. Knowing how requests flow through the internet is fundamental.","key_concepts":{"ipv4":"32-bit address. Public (reachable from internet) vs Private (10.x, 192.168.x).","nat":"Private IPs share one public IP. Router translates.","dns":"Domain name → IP address. Hierarchy: Root → TLD (.com, .in) → Authoritative (google.com → 142.250.x.x).","dns_ttl":"Cache DNS response for TTL seconds. Lower TTL = faster propagation, more DNS queries.","dns_records":"A (domain→IPv4), AAAA (→IPv6), CNAME (alias), MX (email), TXT (verification)"},"real_world_example":"When you open zomato.com: OS checks /etc/hosts → local DNS cache → ISP resolver → Root server → .com TLD → Zomato's authoritative nameserver returns IP. Cached for 300s (Zomato's TTL). CDN uses GeoDNS to return nearest edge server's IP.","interview_questions":["What happens when you type google.com in a browser?","What is DNS TTL and why does it matter for deployments?"]}},
+
+{"slug":"net-tcp-udp","topic_slug":"net-fundamentals","name":"TCP, UDP & QUIC","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":34,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"TCP three-way handshake, reliability, flow control. UDP connectionless. QUIC over UDP.",
+"content":{"explanation":"TCP = reliable, ordered, connection-based. UDP = fast, unreliable, connectionless. QUIC = UDP + reliability + TLS in one.","key_concepts":{"tcp_handshake":"SYN → SYN-ACK → ACK. 1.5 round trips before data flows.","tcp_reliability":"Sequence numbers, acknowledgements, retransmission on timeout.","tcp_flow_control":"Sliding window prevents receiver overflow.","udp_use_cases":"DNS, live video, gaming, VoIP — where speed > reliability.","quic":"HTTP/3 uses QUIC. 0-RTT reconnection. No head-of-line blocking. Used by YouTube, Google."},"real_world_example":"WhatsApp calls use UDP — occasional packet loss is fine (voice glitch), but TCP would wait for retransmit (worse). WhatsApp messages use TCP — guaranteed delivery matters. YouTube uses QUIC (HTTP/3) — faster connection setup, better on mobile with changing networks.","interview_questions":["Why does UDP perform better than TCP for live video?","What problem does QUIC solve that TCP cannot?"]}},
+
+{"slug":"net-http","topic_slug":"net-fundamentals","name":"HTTP, HTTPS & TLS","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":35,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"HTTP/1.1, HTTP/2, HTTP/3, TLS handshake, important status codes.",
+"content":{"explanation":"HTTP is the protocol of the web. Understanding versions, headers, status codes, and TLS is essential for any system design.","key_concepts":{"http1_1":"Persistent connections. But head-of-line blocking — must wait for response before next request on same connection.","http2":"Multiplexing — multiple requests over one TCP connection in parallel. Header compression (HPACK). Used by most APIs today.","http3":"HTTP/2 semantics over QUIC. Eliminates TCP head-of-line blocking. Used by Google, Cloudflare.","tls":"Encryption + authentication. TLS 1.3 = 1-RTT handshake (vs 2-RTT in TLS 1.2).","important_codes":"200 OK, 201 Created, 204 No Content, 301 Permanent Redirect, 302 Temp Redirect, 304 Not Modified (cache), 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Rate Limited, 500 Server Error, 503 Service Unavailable"},"real_world_example":"Razorpay API: uses HTTP/2 for payment APIs. TLS 1.3 for security. 201 Created on successful payment. 409 Conflict if duplicate idempotency key. 429 if rate limited. 503 if payment gateway is down.","interview_questions":["What is the main performance difference between HTTP/1.1 and HTTP/2?","What does a TLS handshake involve?"]}},
+
+{"slug":"rest-api-design","topic_slug":"api-design","name":"REST API Design","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":36,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"Resources, URIs, HTTP methods, pagination, versioning, idempotency, error design.",
+"content":{"explanation":"REST is an architectural style for APIs using HTTP methods on resources.","key_concepts":{"resources":"Nouns in URL: /users, /orders, /products — not verbs","http_methods":"GET (read), POST (create), PUT (replace), PATCH (partial update), DELETE (remove)","versioning":"/api/v1/users vs /api/v2/users — never break existing clients","pagination":"Cursor-based (better for real-time data) vs offset-based (simpler but slow on large datasets)","idempotency":"PUT/DELETE: safe to retry. POST: use idempotency-key header for payments.","error_design":"Return machine-readable code + human message: {error: 'USER_NOT_FOUND', message: 'User 123 not found', status: 404}"},"real_world_example":"Stripe API is the gold standard: every payment has idempotency_key — retry 100 times, charged once. Every response has pagination cursors. Versioned as stripe.com/v1/. Error responses consistent across all endpoints.","interview_questions":["What is idempotency and why is it critical for payment APIs?","Cursor vs offset pagination — when to use each?"]}},
+
+{"slug":"graphql-grpc","topic_slug":"api-design","name":"GraphQL & gRPC","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":37,"mastery_threshold":72.0,"estimated_minutes":20,
+"description":"GraphQL schema/queries/mutations, gRPC Protocol Buffers, when to choose each.",
+"content":{"explanation":"GraphQL lets clients specify exactly what data they need. gRPC uses binary Protocol Buffers for high-performance service-to-service communication.","key_concepts":{"graphql_benefit":"No over-fetching. Mobile app requests only name + photo, not entire user object. One request for nested data.","graphql_problems":"N+1 query problem (DataLoader solves). Cache complexity. Query abuse without complexity limits.","grpc_benefit":"7-10x faster than REST. Strongly typed contract (.proto). Streaming support. Native code generation.","grpc_use_case":"Internal service-to-service communication. Not for browser clients (needs gRPC-web proxy)."},"real_world_example":"GitHub uses GraphQL for their public API — mobile app requests exactly name, avatar, repos[name, stars] in one query. Uber uses gRPC between internal services — DriverService → LocationService → MatchingService. Binary format reduces payload 70% vs JSON.","interview_questions":["When would you choose GraphQL over REST?","What is the N+1 problem in GraphQL?"]}},
+
+{"slug":"websockets-realtime","topic_slug":"api-design","name":"WebSockets, SSE & Polling","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":38,"mastery_threshold":72.0,"estimated_minutes":18,
+"description":"Full-duplex WebSockets, Server-Sent Events (one-way), long polling vs short polling.",
+"content":{"explanation":"Real-time communication options: WebSocket (bidirectional), SSE (server→client only), long polling (HTTP-based fallback).","key_concepts":{"websocket":"Persistent TCP connection. Full-duplex. Upgrade from HTTP. Used for chat, live games, collaborative editing.","sse":"Server pushes events to client over HTTP. One-way. Simpler than WebSocket. Auto-reconnects.","long_polling":"Client sends request, server holds until data available or timeout. Fallback for no WebSocket support.","short_polling":"Client polls every N seconds. Wasteful. Avoid."},"real_world_example":"WhatsApp Web uses WebSocket — messages flow both ways in real time. Twitter live feed uses SSE — server pushes new tweets, client doesn't send messages. Stock ticker: SSE from backend, client only receives. Multiplayer game: WebSocket — both players send/receive moves in real time.","interview_questions":["WebSocket vs SSE — when to use each?","How do you scale WebSocket servers horizontally?"]}},
+
+{"slug":"webhooks-rate-limiting","topic_slug":"api-design","name":"Webhooks, Rate Limiting & API Security","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":39,"mastery_threshold":72.0,"estimated_minutes":18,
+"description":"Event-driven webhooks, rate limiting algorithms, CORS, authentication, web security.",
+"content":{"explanation":"Webhooks notify external systems when events happen. Rate limiting protects APIs. Security prevents abuse.","key_concepts":{"webhooks":"Razorpay calls your callback URL when payment succeeds. Verify HMAC signature to prevent spoofing.","rate_limiting_algos":"Token bucket (allows bursts), sliding window log (accurate), sliding window counter (efficient approximate).","cors":"Browser blocks cross-origin requests unless server includes Access-Control-Allow-Origin header.","api_security":"JWT for stateless auth, OAuth2 for delegated auth, API keys for service-to-service, HMAC for webhooks."},"real_world_example":"Stripe webhook: POST to your /webhook endpoint with payment event JSON. You verify signature using HMAC-SHA256 with your secret. Return 200 quickly, process async. Stripe retries for 72 hours if you return non-200.","interview_questions":["How do you handle duplicate webhook deliveries?","Token bucket vs leaky bucket — what is the difference?"]}},
+
+{"slug":"net-cdn-proxy","topic_slug":"net-reliability","name":"CDN, Reverse Proxy & Load Balancing","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":40,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"CDN edge servers, reverse proxy, L4/L7 load balancers, consistent hashing.",
+"content":{"explanation":"CDN brings content close to users. Reverse proxy sits between clients and servers. Load balancer distributes traffic.","key_concepts":{"cdn":"450+ edge locations (CloudFront). Static assets cached at edge. Dynamic content via origin shield.","reverse_proxy":"Nginx/HAProxy. SSL termination, compression, caching, routing — before request reaches app server.","l4_lb":"Routes based on IP/TCP. Fast but no HTTP awareness.","l7_lb":"Routes based on URL, headers, cookies. Smarter, enables A/B testing and canary.","consistent_hashing":"Distribute data/requests across nodes. Adding/removing node only moves 1/N of traffic."},"real_world_example":"Netflix Open Connect CDN: servers placed inside ISPs (Jio, Airtel). Video never leaves India's network → < 20ms latency. Streaming team uses consistent hashing to shard user sessions across WebSocket servers — adding a server only remaps ~10% of connections.","aws_specific":"CloudFront (CDN) + ALB (L7) + NLB (L4). Route 53 for DNS-based load balancing and health checks.","interview_questions":["What is the difference between L4 and L7 load balancing?","How does consistent hashing solve the resharding problem?"]}},
+
+{"slug":"net-security","topic_slug":"net-reliability","name":"Network Reliability & Security","category":ConceptCategory.NETWORKING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":41,"mastery_threshold":72.0,"estimated_minutes":15,
+"description":"Retry with backoff, timeouts, circuit breaker, VPC, firewalls, DDoS, SQL injection, XSS.",
+"content":{"explanation":"Networks are unreliable. Retry logic, timeouts, and circuit breakers make services resilient. Security prevents attacks.","key_concepts":{"retry_backoff":"Retry with exponential backoff + jitter: wait 1s, 2s, 4s, 8s + random jitter. Prevents thundering herd.","timeout":"Set timeout on every network call. Never wait indefinitely.","circuit_breaker":"After N failures, stop calling broken service. Return fallback. Reset after recovery timeout.","vpc":"Virtual Private Cloud — isolated network. Public subnet for LB, private subnet for app servers and DB.","ddos_protection":"AWS Shield (L3/L4), AWS WAF (L7). Rate limiting, geo-blocking, request filtering.","sql_injection":"Never concatenate user input in SQL. Always parameterized queries.","xss":"Sanitize HTML output. Content-Security-Policy headers."},"real_world_example":"PayTm payment retry: network timeout → retry with exponential backoff → idempotency key ensures no double charge. Circuit breaker: if bank gateway fails for 10 seconds, show 'Try again later' immediately without waiting 30s timeout each time.","interview_questions":["How does exponential backoff with jitter prevent thundering herd?","What is a VPC and why is it important for security?"]}},
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HLD AREA 3 — DATABASES
+# ══════════════════════════════════════════════════════════════════════════════
+
+{"slug":"db-sql-fundamentals","topic_slug":"sql-db","name":"SQL Database Fundamentals","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":42,"mastery_threshold":75.0,"estimated_minutes":25,
+"description":"Tables, keys, relationships, normalization, SQL queries.",
+"content":{"explanation":"Relational databases store data in tables with strict schemas and enforce relationships through foreign keys.","key_concepts":{"primary_key":"Uniquely identifies each row. Should be immutable, small, and fast to index.","foreign_key":"References primary key in another table. Enforces referential integrity.","normalization":"1NF: atomic values. 2NF: no partial dependencies. 3NF: no transitive dependencies.","denormalization":"Add redundant data for read performance at cost of update complexity.","joins":"INNER (both match), LEFT (all from left), RIGHT (all from right), FULL OUTER (all rows)."},"real_world_example":"Ola's trip database: trips table (trip_id, driver_id, rider_id, start_lat, end_lat, amount, status). drivers table (driver_id, name, vehicle_id). riders table (rider_id, name, phone). Foreign keys link them. Trip query joins all three tables. Without normalization: storing driver name in every trip row — one name change = millions of row updates.","interview_questions":["When would you denormalize a schema?","What is the difference between a clustered and non-clustered index?"]}},
+
+{"slug":"db-acid-transactions","topic_slug":"sql-db","name":"ACID, Transactions & Isolation Levels","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":43,"mastery_threshold":77.0,"estimated_minutes":25,
+"description":"Atomicity, Consistency, Isolation, Durability. Isolation levels and their trade-offs.",
+"content":{"explanation":"ACID properties guarantee database correctness. Isolation levels trade consistency for concurrency.","key_concepts":{"atomicity":"Transaction succeeds completely or fails completely — never partial.","consistency":"DB moves from one valid state to another. All constraints satisfied.","isolation":"Concurrent transactions appear to execute serially.","durability":"Committed data survives crashes (written to WAL — Write-Ahead Log).","read_uncommitted":"Sees uncommitted changes (dirty reads). Fastest, least safe.","read_committed":"Only sees committed data. Protects from dirty reads. (PostgreSQL default)","repeatable_read":"Same query returns same result in transaction. Protects from non-repeatable reads. (MySQL InnoDB default)","serializable":"Strictest. No anomalies. Slowest — uses locks or MVCC."},"real_world_example":"Paytm bank transfer: BEGIN → debit your account (₹500) → credit receiver → COMMIT. If DB crashes between debit and credit: ROLLBACK — money neither lost nor doubled. ACID guarantees this. Read Committed: you see other users' completed transactions but not in-progress ones (prevents seeing phantom payments).","interview_questions":["What is a dirty read? Give a real example.","What is MVCC and how does it improve concurrency?"]}},
+
+{"slug":"db-indexing","topic_slug":"sql-db","name":"Database Indexing Deep Dive","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.ADVANCED,"order_index":44,"mastery_threshold":77.0,"estimated_minutes":25,
+"description":"B-tree, hash, composite, covering, clustered vs non-clustered indexes. Query optimization.",
+"content":{"explanation":"Indexes speed up reads at the cost of write overhead and storage. Choosing the right indexes is critical for performance.","key_concepts":{"btree":"Default. Stores data in sorted tree. Supports =, <, >, BETWEEN, LIKE 'abc%', ORDER BY.","hash_index":"O(1) equality. Useless for ranges.","composite":"Multi-column index. Leftmost prefix rule: index (a,b,c) can answer queries on (a), (a,b), (a,b,c) but NOT (b) or (c) alone.","covering":"Index contains all columns the query needs — DB never touches the table.","clustered":"Table rows stored in index order. One per table. Primary key is usually clustered.","explain":"EXPLAIN/EXPLAIN ANALYZE shows if index is used. Look for 'Seq Scan' = bad, 'Index Scan' = good."},"real_world_example":"Ola trip history: SELECT * FROM trips WHERE driver_id=123 AND status='COMPLETED' ORDER BY end_time DESC LIMIT 20. Without index: full scan of 1B trips = 30 seconds. Composite index on (driver_id, status, end_time): milliseconds. Covering index adds all selected columns — zero table access.","interview_questions":["What is the leftmost prefix rule?","When would too many indexes hurt performance?"]}},
+
+{"slug":"db-replication","topic_slug":"nosql-scaling","name":"Database Replication","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.ADVANCED,"order_index":45,"mastery_threshold":77.0,"estimated_minutes":25,
+"description":"Primary-replica, sync/async replication, read replicas, failover, replication lag.",
+"content":{"explanation":"Replication copies data across multiple nodes for read scaling and high availability.","key_concepts":{"primary_replica":"Primary accepts all writes. Replicas copy changes and serve reads.","sync_replication":"Write confirmed after replica acknowledges. Strong consistency but higher write latency.","async_replication":"Write confirmed immediately. Replica may lag. Risk of data loss on primary failure.","replication_lag":"Replica may be seconds behind primary. Stale reads possible.","failover":"On primary failure: promote replica. Manual (DBA action) or automatic (with monitoring).","multi_leader":"Multiple nodes accept writes. Conflict resolution needed (last-write-wins or CRDTs).","leaderless":"All nodes accept writes. Quorum (W+R > N) ensures consistency."},"real_world_example":"Twitter user database: PRIMARY handles writes (tweets, follows). 5 READ REPLICAS handle read traffic (timeline fetches). 90% of queries are reads — replicas handle 90% of load, primary handles 10%. During primary failure: replica promoted in ~60 seconds automatically.","aws_specific":"Aurora: up to 15 read replicas, automatic failover in <30 seconds. RDS Multi-AZ: synchronous replication to standby in different AZ.","interview_questions":["What is replication lag and how do you handle it?","When would you use synchronous vs asynchronous replication?"]}},
+
+{"slug":"db-sharding","topic_slug":"nosql-scaling","name":"Sharding & Consistent Hashing","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.ADVANCED,"order_index":46,"mastery_threshold":77.0,"estimated_minutes":25,
+"description":"Horizontal sharding, shard key selection, consistent hashing, hot partitions, resharding.",
+"content":{"explanation":"Sharding splits data across multiple database nodes. Each shard holds a subset of data.","key_concepts":{"range_sharding":"Users A-M on shard1, N-Z on shard2. Risk: uneven distribution if names cluster.","hash_sharding":"hash(user_id) % num_shards. Even distribution but range queries span all shards.","consistent_hashing":"Hash ring. Keys map to nearest node clockwise. Add/remove node: only 1/N of keys move.","hot_partition":"One shard gets disproportionate traffic. E.g. sharding by created_at puts all new data on one shard.","cross_shard_query":"Queries joining data from multiple shards are expensive — avoid with good shard key choice."},"real_world_example":"Instagram shards photo metadata by user_id using consistent hashing. Adding a new shard server: only ~10% of users remapped (not 90% like simple hash modulo). Twitter shards tweet storage by tweet_id. Problem: cross-shard joins for trending topics require scatter-gather across all shards.","aws_specific":"DynamoDB automatically partitions and rebalances. Choose partition key carefully: user_id (good), status (bad — hot partition). ElastiCache Redis Cluster uses 16384 hash slots distributed across nodes.","interview_questions":["What makes a good shard key?","How does consistent hashing differ from simple hash modulo?"]}},
+
+{"slug":"db-nosql","topic_slug":"nosql-scaling","name":"NoSQL Databases","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":47,"mastery_threshold":75.0,"estimated_minutes":25,
+"description":"Key-value, document, wide-column, graph databases — when to choose each.",
+"content":{"explanation":"NoSQL databases trade some SQL features for horizontal scalability, flexibility, and specialized performance.","key_concepts":{"key_value":"Redis, DynamoDB — O(1) lookup. Cache, sessions, counters, leaderboards.","document":"MongoDB — flexible JSON. User profiles, product catalogs, content management.","wide_column":"Cassandra — time-series, write-heavy. Message history, activity logs, IoT data.","graph":"Neo4j — social networks, recommendation engines, fraud detection.","search":"Elasticsearch — full-text search, log analysis, autocomplete."},"real_world_example":"Instagram uses: Cassandra for photo/comment metadata (write-heavy, time-ordered). Redis for session cache, feed cache, rate limiting. PostgreSQL for user accounts and follow relationships. Elasticsearch for search. Each NoSQL DB used where it excels.","aws_specific":"DynamoDB (key-value+document). ElastiCache Redis (cache). Amazon Keyspaces (Cassandra-compatible). Neptune (graph). OpenSearch Service (Elasticsearch).","gcp_specific":"Firestore (document), Bigtable (wide-column, petabyte-scale), Memorystore (Redis).","interview_questions":["When would you choose Cassandra over MongoDB?","What is eventual consistency and when is it acceptable?"]}},
+
+{"slug":"db-cap-consistency","topic_slug":"nosql-scaling","name":"CAP Theorem & Consistency Models","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.ADVANCED,"order_index":48,"mastery_threshold":77.0,"estimated_minutes":20,
+"description":"CAP theorem, CP vs AP systems, strong vs eventual consistency, quorum.",
+"content":{"explanation":"CAP: a distributed system can only guarantee 2 of 3: Consistency, Availability, Partition Tolerance. Since P is unavoidable, real choice is C vs A.","key_concepts":{"cp_systems":"Reject writes during partition to maintain consistency. HBase, ZooKeeper, etcd. Use for financial data.","ap_systems":"Accept writes during partition, reconcile later. Cassandra, CouchDB. Use for social feeds.","strong_consistency":"Every read sees the latest write. Requires coordination. Higher latency.","eventual_consistency":"Given no new updates, all replicas converge eventually. Faster, lower latency.","quorum":"R + W > N ensures at least one node has latest data. R=2, W=2, N=3 is common.","read_your_writes":"You always see your own writes. Others may see stale data briefly."},"real_world_example":"DynamoDB: AP by default (eventually consistent reads). Can request strongly consistent reads but 2x the cost. Amazon cart: AP — shows slightly stale cart but never rejects your Add to Cart. Bank account: CP — never show wrong balance, reject if partition.","interview_questions":["Where does DynamoDB sit on the CAP spectrum?","What is the PACELC extension to CAP?"]}},
+
+{"slug":"db-disaster-recovery","topic_slug":"nosql-scaling","name":"Backup, Disaster Recovery & Multi-Region","category":ConceptCategory.DATABASES,"difficulty":DifficultyLevel.ADVANCED,"order_index":49,"mastery_threshold":72.0,"estimated_minutes":20,
+"description":"RTO/RPO, backup types, multi-region, active-active databases.",
+"content":{"explanation":"Disaster recovery planning ensures data survives catastrophic failures.","key_concepts":{"rto":"Recovery Time Objective — maximum acceptable downtime. Bank: minutes. Blog: hours.","rpo":"Recovery Point Objective — maximum acceptable data loss. Bank: zero. Blog: 1 hour.","full_backup":"Complete DB snapshot. Slow but complete.","incremental_backup":"Only changes since last backup. Fast but complex restore.","point_in_time":"Restore to any moment using WAL logs. PostgreSQL, Aurora support this.","multi_region":"Geo-replicate data. Active-passive (one region serves, other is standby). Active-active (both serve, needs conflict resolution)."},"real_world_example":"Stripe: RPO=0 (no transaction can be lost). RTO=minutes. Uses PostgreSQL with synchronous replication across 3 availability zones + async replication to second region. Daily backups retained for 35 days.","aws_specific":"Aurora Global Database: sub-second replication to secondary region. Failover to secondary in < 1 minute. RDS automated backups with point-in-time recovery.","interview_questions":["What is the difference between RTO and RPO?","How would you design a database for zero RPO?"]}},
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HLD AREA 4 — CACHING
+# ══════════════════════════════════════════════════════════════════════════════
+
+{"slug":"cache-fundamentals","topic_slug":"caching-topic","name":"Caching Fundamentals & Redis","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":50,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"What is caching, cache hit/miss, Redis data structures, use cases.",
+"content":{"explanation":"Caching stores frequently accessed data in fast memory to reduce database load and response latency.","key_concepts":{"cache_hit":"Data found in cache. Serve immediately (~1ms). Cache hit ratio = hits/total requests.","cache_miss":"Data not in cache. Fetch from DB (~50ms), store in cache.","redis_strings":"Simple key-value. SET user:123 '{...}' EX 300 (expires in 300 seconds).","redis_hashes":"Object with fields. HSET user:123 name 'Sunay' email 'x@y.com'.","redis_sorted_sets":"Leaderboard with scores. ZADD leaderboard 1500 'user123'. ZRANGE for top N.","redis_lists":"Message queues, recent activity. LPUSH, RPOP.","redis_pubsub":"Pub/Sub for real-time notifications (though Kafka better for production scale)."},"real_world_example":"Swiggy restaurant menu: first request hits PostgreSQL (50ms), cached in Redis for 5 minutes. Next 10,000 requests from Redis (1ms). 50x faster, 10,000x less DB load. Menu cached as JSON string. When restaurant updates menu, cache explicitly invalidated.","aws_specific":"ElastiCache Redis: managed. Use Cluster mode for >256GB or high throughput. Automatic failover with Multi-AZ.","interview_questions":["When would you use Redis Sorted Sets?","What is the difference between Redis and Memcached?"]}},
+
+{"slug":"cache-strategies","topic_slug":"caching-topic","name":"Cache Strategies","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":51,"mastery_threshold":77.0,"estimated_minutes":20,
+"description":"Cache-aside, read-through, write-through, write-back, write-around, refresh-ahead.",
+"content":{"explanation":"Different strategies suit different read/write patterns and consistency requirements.","key_concepts":{"cache_aside":"App checks cache. Miss → read DB → write cache. Most common. App controls caching logic.","read_through":"Cache sits in front. On miss, cache fetches from DB itself. Simpler app code.","write_through":"Write to cache AND DB simultaneously. Cache always consistent. Higher write latency.","write_back":"Write to cache only. Flush to DB async. Fastest writes. Risk: data loss if cache crashes before flush.","write_around":"Write directly to DB, bypass cache. Use when written data unlikely to be read soon.","refresh_ahead":"Cache refreshes popular entries before expiry. Reduces cache miss latency for hot data."},"real_world_example":"Instagram profile cache: Cache-aside. Profile loaded → Redis SET user:{id} EX 3600. User updates bio → DB update + Redis DELETE (invalidate). Next request repopulates. Write-back in gaming: player score written to Redis immediately, batch flushed to PostgreSQL every 30 seconds — fast writes, acceptable risk.","interview_questions":["What strategy would you use for a leaderboard?","When would you use write-back vs write-through?"]}},
+
+{"slug":"cache-eviction-ttl","topic_slug":"caching-topic","name":"Cache Eviction & TTL","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":52,"mastery_threshold":75.0,"estimated_minutes":15,
+"description":"LRU, LFU, FIFO eviction policies. TTL, lazy vs active expiration, jitter.",
+"content":{"explanation":"When cache fills up, eviction removes entries. TTL automatically expires stale data.","key_concepts":{"lru":"Least Recently Used — remove entry not accessed longest. Good for temporal locality (recently used likely to be used again).","lfu":"Least Frequently Used — remove least accessed entry. Better for skewed access patterns.","fifo":"First In First Out — remove oldest. Simple but ignores access patterns.","ttl":"Time To Live — auto-expire entries. SET key value EX 300.","ttl_jitter":"Add random seconds to TTL to prevent many entries expiring simultaneously.","lazy_expiration":"Only check TTL on access. Memory not freed until accessed or active scan.","active_expiration":"Background process scans for expired keys and removes them."},"real_world_example":"Product page cache: LRU in Redis. iPhone page accessed every second — stays in cache. Obscure product accessed once per day — evicted when cache fills. TTL=3600 (1 hour) on product data. Jitter: TTL = 3600 + random(0,600) — prevents all products expiring at once during a 3am cache restart.","interview_questions":["When would you choose LFU over LRU?","What is TTL jitter and why is it important?"]}},
+
+{"slug":"cache-invalidation","topic_slug":"caching-topic","name":"Cache Invalidation","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.ADVANCED,"order_index":53,"mastery_threshold":77.0,"estimated_minutes":20,
+"description":"TTL-based, event-based, write-through invalidation. Stale data, versioned keys.",
+"content":{"explanation":"'Cache invalidation is one of the two hard problems in computer science.' Keeping cache consistent with DB is the central challenge.","key_concepts":{"ttl_invalidation":"Simple. Stale for up to TTL seconds. Acceptable for menus, product descriptions.","explicit_invalidation":"On write, DELETE cache key. Guarantees freshness on next read. Race condition risk.","write_through":"Write cache + DB together atomically. No staleness but higher write cost.","event_based":"DB change event → invalidate cache. E.g., Debezium CDC (Change Data Capture) streams DB changes.","versioned_keys":"user:{id}:v2 — instead of deleting, use version number. Old cached responses naturally become stale."},"real_world_example":"Twitter tweet edit (new feature): tweet:{id} cache. Old approach: delete cache on edit. Problem: between delete and repopulate, 10,000 requests hit DB simultaneously (stampede). Solution: versioned key tweet:{id}:v{version} — old version still served, new version populated on first miss.","interview_questions":["What is the cache stampede problem?","How does event-driven cache invalidation work?"]}},
+
+{"slug":"cache-problems","topic_slug":"caching-topic","name":"Cache Problems: Stampede, Penetration, Avalanche, Hot Keys","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.ADVANCED,"order_index":54,"mastery_threshold":77.0,"estimated_minutes":20,
+"description":"Cache stampede (thundering herd), penetration, avalanche, hot keys — causes and solutions.",
+"content":{"explanation":"Production cache systems face several failure patterns that can cascade into database overload.","key_concepts":{"stampede":"Cache key expires → 1000 concurrent requests all miss → 1000 DB queries simultaneously. Solution: mutex lock (only one thread fetches), probabilistic early expiry (randomly refresh before TTL), stale-while-revalidate.","penetration":"Requests for non-existent keys bypass cache on every request. Solution: cache NULL responses with short TTL (negative caching), bloom filter to reject impossible keys.","avalanche":"Many keys expire simultaneously. Solution: TTL jitter, staggered expiration, cache warming.","hot_keys":"Single cache key receives huge traffic (iphone-15 product page). Redis single-threaded → bottleneck. Solution: local in-process cache (L1), replicate hot key to multiple slots, read from multiple replicas."},"real_world_example":"Xiaomi phone launch: 10M users hit flipkart.com/mi-sale at 12:00:00 exactly. Cache for sale items expires at 11:59:59. All 10M users miss → DB receives 10M queries → overload. Solution: probabilistic refresh (each cache check has 1% chance to refresh if within last 10% of TTL) prevents synchronized expiry.","interview_questions":["Describe the thundering herd problem and two solutions.","How would you handle a hot key in Redis?"]}},
+
+{"slug":"cache-distributed","topic_slug":"caching-topic","name":"Distributed Cache Architecture","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.ADVANCED,"order_index":55,"mastery_threshold":75.0,"estimated_minutes":20,
+"description":"Redis Cluster, sharding, replication, two-level cache (L1 local + L2 Redis), failure handling.",
+"content":{"explanation":"Production systems use distributed cache clusters for capacity and availability.","key_concepts":{"redis_cluster":"16384 hash slots distributed across nodes. Data automatically sharded. Client routes to correct node using hash slot.","cache_replication":"Primary node + replicas. Reads from replicas for higher throughput. Failover to replica on primary failure.","two_level_cache":"L1: in-process (Guava, Caffeine) — microseconds, limited size. L2: Redis — milliseconds, large. L1 hit saves network round trip.","cache_warming":"Pre-populate cache before traffic hits. On deployment: warm popular keys from DB. Prevents cold start miss storm.","cache_failure":"If Redis cluster fails: fall back to DB. Add rate limiting to prevent DB overload. Circuit breaker: if fallback latency > threshold, reject requests with 503."},"real_world_example":"Netflix two-level cache: Ephemeral Object Cache (EVCache) with L1 in-process JVM cache per node + L2 EVCache (Redis-like) cluster. L1 serves 95% of requests in microseconds. L2 serves the rest. Origin DB handles < 1% of requests. Result: database handles only bursts during L2 misses.","interview_questions":["What are the trade-offs of a two-level cache?","How do you warm up a cache after a deployment?"]}},
+
+{"slug":"cache-estimation","topic_slug":"caching-topic","name":"System Estimation & HLD Case Studies","category":ConceptCategory.CACHING,"difficulty":DifficultyLevel.INTERMEDIATE,"order_index":56,"mastery_threshold":75.0,"estimated_minutes":25,
+"description":"Back-of-envelope calculations for QPS, storage, bandwidth. URL shortener, Instagram, Uber.",
+"content":{"explanation":"Estimation shows you understand scale and can size systems appropriately in interviews.","key_formulas":{"qps":"daily_requests / 86400 (seconds per day)","storage":"request_count * avg_object_size","bandwidth":"qps * avg_response_size","servers":"peak_qps / qps_per_server"},"worked_example":"Instagram: 500M DAU. 10% post daily = 50M posts/day = 580 posts/sec. Each post 1MB photo = 50TB/day storage. Replication 3x = 150TB/day. CDN bandwidth: 500M * 10 views/day = 5B views/day. At 200KB avg = 1PB/day bandwidth. Tells you: need object storage (S3), CDN, 580 write ops/sec to DB.","real_world_example":"URL shortener: 100M URLs/day = 1157 writes/sec. Read/write 100:1 = 115,700 reads/sec. Short URL 7 chars, long URL avg 200 chars = 207 bytes/row. 100M/day * 365 days * 207 bytes = 7.5TB/year. Redis cache top 20% URLs (Pareto) = 1.5TB cache = manageable.","interview_questions":["How many servers does YouTube need?","Estimate storage for WhatsApp messages for 1 year."]}},
 ]
 
+CONCEPTS = CONCEPTS + HLD_CONCEPTS
+
+
 # ─────────────────────────────────────────────────────────────────────────────
-# PREREQUISITE EDGES  (concept_slug → [prerequisite_slugs])
+# PREREQUISITES  (concept_slug → [required prereq slugs])
 # ─────────────────────────────────────────────────────────────────────────────
-
-PREREQUISITES: dict[str, list[str]] = {
-    # OOP internal ordering
-    "encapsulation":            ["classes-and-objects"],
-    "inheritance":              ["classes-and-objects", "encapsulation"],
-    "polymorphism":             ["inheritance"],
-    "abstraction":              ["interfaces-and-composition"],
-    "interfaces-and-composition": ["inheritance", "polymorphism"],
-
-    # SOLID requires OOP
-    "single-responsibility":    ["interfaces-and-composition"],
-    "open-closed":              ["single-responsibility", "polymorphism"],
-    "liskov-substitution":      ["inheritance", "polymorphism"],
-    "interface-segregation":    ["abstraction"],
-    "dependency-inversion":     ["interface-segregation", "open-closed"],
-
+PREREQUISITES = {
+    # LLD OOP chain
+    "encapsulation":              ["classes-and-objects"],
+    "inheritance":                ["encapsulation"],
+    "polymorphism":               ["inheritance"],
+    "abstraction":                ["polymorphism"],
+    "interfaces-and-composition": ["abstraction"],
+    # SOLID
+    "single-responsibility":      ["interfaces-and-composition"],
+    "open-closed":                ["single-responsibility"],
+    "liskov-substitution":        ["inheritance", "polymorphism"],
+    "interface-segregation":      ["abstraction"],
+    "dependency-inversion":       ["interface-segregation", "open-closed"],
     # Design principles
-    "dry-principle":            ["single-responsibility"],
-    "kiss-yagni":               ["dry-principle"],
-    "dependency-injection":     ["dependency-inversion"],
-
-    # Creational patterns require SOLID
-    "singleton-pattern":        ["dependency-inversion"],
-    "factory-pattern":          ["open-closed", "single-responsibility"],
-    "builder-pattern":          ["factory-pattern"],
-
-    # Structural patterns
-    "adapter-pattern":          ["interfaces-and-composition"],
-    "decorator-pattern":        ["open-closed", "interfaces-and-composition"],
-    "facade-pattern":           ["single-responsibility"],
-
-    # Behavioral patterns
-    "strategy-pattern":         ["open-closed", "dependency-inversion"],
-    "observer-pattern":         ["interfaces-and-composition", "single-responsibility"],
-    "command-pattern":          ["strategy-pattern"],
-    "state-pattern":            ["strategy-pattern"],
-
-    # LLD problems require patterns
-    "lld-parking-lot":          ["factory-pattern", "strategy-pattern", "singleton-pattern"],
-    "lld-elevator":             ["state-pattern", "strategy-pattern", "observer-pattern"],
-    "lld-splitwise":            ["strategy-pattern", "observer-pattern"],
-
-    # HLD requires LLD mastery
-    "system-design-fundamentals": ["lld-parking-lot"],
-    "networking-basics":        ["system-design-fundamentals"],
-    "sql-databases":            ["system-design-fundamentals"],
-    "nosql-databases":          ["sql-databases"],
-    "caching-fundamentals":     ["sql-databases", "nosql-databases"],
-    "cap-theorem":              ["nosql-databases"],
-    "horizontal-scaling":       ["cap-theorem"],
-    "message-queues":           ["horizontal-scaling"],
-    "load-balancing":           ["networking-basics", "horizontal-scaling"],
-    "hld-url-shortener":        ["caching-fundamentals", "sql-databases", "load-balancing"],
-    "hld-instagram":            ["message-queues", "caching-fundamentals", "load-balancing"],
-    "hld-rate-limiter":         ["caching-fundamentals", "message-queues", "load-balancing"],
+    "dry-kiss-yagni":             ["single-responsibility"],
+    "dependency-injection":       ["dependency-inversion"],
+    # Patterns
+    "creational-patterns":        ["dependency-inversion"],
+    "structural-patterns":        ["interfaces-and-composition", "open-closed"],
+    "behavioral-patterns":        ["open-closed", "dependency-inversion"],
+    # LLD problems
+    "lld-parking-lot":            ["creational-patterns", "behavioral-patterns"],
+    "lld-elevator":               ["behavioral-patterns"],
+    "lld-splitwise":              ["behavioral-patterns"],
+    "lld-rate-limiter":           ["behavioral-patterns", "structural-patterns"],
+    # HLD Architecture — requires some LLD
+    "arch-fundamentals":          ["lld-parking-lot"],
+    "arch-tier-models":           ["arch-fundamentals"],
+    "arch-monolith":              ["arch-tier-models"],
+    "arch-microservices":         ["arch-monolith"],
+    "arch-event-driven":          ["arch-microservices", "behavioral-patterns"],
+    "arch-serverless":            ["arch-microservices"],
+    "arch-clean-hexagonal":       ["dependency-inversion", "arch-microservices"],
+    "arch-scalability":           ["arch-microservices"],
+    "arch-ha-fault-tolerance":    ["arch-scalability"],
+    "arch-deployment-patterns":   ["arch-ha-fault-tolerance"],
+    "arch-api-gateway":           ["arch-microservices"],
+    "arch-saga-cqrs":             ["arch-event-driven", "arch-microservices"],
+    # HLD Networking
+    "net-ip-dns":                 ["arch-fundamentals"],
+    "net-tcp-udp":                ["net-ip-dns"],
+    "net-http":                   ["net-tcp-udp"],
+    "rest-api-design":            ["net-http"],
+    "graphql-grpc":               ["rest-api-design"],
+    "websockets-realtime":        ["net-http"],
+    "webhooks-rate-limiting":     ["rest-api-design"],
+    "net-cdn-proxy":              ["net-http", "arch-scalability"],
+    "net-security":               ["net-http", "rest-api-design"],
+    # HLD Databases
+    "db-sql-fundamentals":        ["arch-fundamentals"],
+    "db-acid-transactions":       ["db-sql-fundamentals"],
+    "db-indexing":                ["db-sql-fundamentals"],
+    "db-replication":             ["db-acid-transactions"],
+    "db-sharding":                ["db-replication"],
+    "db-nosql":                   ["db-sql-fundamentals"],
+    "db-cap-consistency":         ["db-nosql", "db-replication"],
+    "db-disaster-recovery":       ["db-replication", "arch-ha-fault-tolerance"],
+    # HLD Caching
+    "cache-fundamentals":         ["db-sql-fundamentals", "db-nosql"],
+    "cache-strategies":           ["cache-fundamentals"],
+    "cache-eviction-ttl":         ["cache-fundamentals"],
+    "cache-invalidation":         ["cache-strategies"],
+    "cache-problems":             ["cache-invalidation"],
+    "cache-distributed":          ["cache-problems", "db-sharding"],
+    "cache-estimation":           ["cache-distributed", "arch-ha-fault-tolerance"],
 }
