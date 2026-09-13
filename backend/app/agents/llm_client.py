@@ -13,7 +13,7 @@ from app.core.logging import logger
 def get_llm(temperature: float = 0.4):
     api_key = os.getenv("GROQ_API_KEY", "")
     return ChatGroq(
-        model="gemma2-9b-it",
+        model="gemma-4-31b-it",
         temperature=temperature,
         groq_api_key=api_key,
         max_tokens=1024,
