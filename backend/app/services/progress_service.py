@@ -218,23 +218,31 @@ class ProgressService:
     @staticmethod
     async def get_dashboard(user_id: uuid.UUID, db: AsyncSession) -> DashboardOut:
         from app.models.user import User
+        from app.models.onboarding import UserOnboarding, PathType
 
         user_res = await db.execute(select(User).where(User.id == user_id))
         user = user_res.scalar_one()
 
-        # All concepts count
-        all_concepts_result = await db.execute(
-            select(func.count(Concept.id)).where(Concept.is_active == True)
+        # Get user's path preference
+        onboarding_res = await db.execute(
+            select(UserOnboarding).where(UserOnboarding.user_id == user_id)
         )
-        total_concepts = all_concepts_result.scalar() or 0
+        onboarding = onboarding_res.scalar_one_or_none()
+        path_type = onboarding.path_type if onboarding else None
 
-        # All progress for this user
-        prog_res = await db.execute(
+        # All progress for this user filtered by path
+        prog_query = (
             select(UserProgress, Concept, Topic)
             .join(Concept, UserProgress.concept_id == Concept.id)
             .join(Topic, Concept.topic_id == Topic.id)
             .where(UserProgress.user_id == user_id)
         )
+        if path_type == PathType.LLD_ONLY:
+            prog_query = prog_query.where(Topic.phase == Phase.LLD)
+        elif path_type == PathType.HLD_ONLY:
+            prog_query = prog_query.where(Topic.phase == Phase.HLD)
+
+        prog_res = await db.execute(prog_query)
         rows = prog_res.fetchall()
 
         lld_scores, hld_scores, all_scores = [], [], []
@@ -296,10 +304,28 @@ class ProgressService:
     async def get_all_concept_progress(
         user_id: uuid.UUID, db: AsyncSession
     ) -> list[ConceptProgressOut]:
-        # Get all concepts
-        concepts_result = await db.execute(
-            select(Concept).where(Concept.is_active == True).order_by(Concept.order_index)
+        from app.models.onboarding import UserOnboarding, PathType
+
+        # Get user's path preference
+        onboarding_res = await db.execute(
+            select(UserOnboarding).where(UserOnboarding.user_id == user_id)
         )
+        onboarding = onboarding_res.scalar_one_or_none()
+        path_type = onboarding.path_type if onboarding else None
+
+        # Filter concepts by path
+        concepts_query = select(Concept).where(Concept.is_active == True)
+        if path_type == PathType.LLD_ONLY:
+            concepts_query = concepts_query.where(Concept.topic_id.in_(
+                select(Topic.id).where(Topic.phase == Phase.LLD)
+            ))
+        elif path_type == PathType.HLD_ONLY:
+            concepts_query = concepts_query.where(Concept.topic_id.in_(
+                select(Topic.id).where(Topic.phase == Phase.HLD)
+            ))
+        # personalized/full → show all
+
+        concepts_result = await db.execute(concepts_query.order_by(Concept.order_index))
         all_concepts = concepts_result.scalars().all()
 
         # Get existing progress records
@@ -317,7 +343,7 @@ class ProgressService:
                 mastery_score=progress.mastery_score if progress else 0.0,
                 mastery_level=progress.mastery_level.value if progress and progress.mastery_level else "not_started",
                 attempts=progress.attempts if progress else 0,
-                is_unlocked=progress.is_unlocked if progress else (concept.order_index == 1),
+                is_unlocked=progress.is_unlocked if progress else False,
                 is_completed=progress.is_completed if progress else False,
                 next_review_date=progress.next_review_date.isoformat() if progress and progress.next_review_date else None,
                 weak_subtopics=progress.weak_subtopics if progress else [],
