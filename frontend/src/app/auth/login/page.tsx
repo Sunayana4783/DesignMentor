@@ -17,7 +17,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      router.push("/dashboard");
+      router.push("/select-path");
     } catch {
       setError("Invalid email or password.");
     }
