@@ -45,8 +45,36 @@ async def feature_importances(current_user: CurrentUser):
     return MasteryPredictor.feature_importances()
 
 
-@router.post("/seed")
-async def seed_database(db: DBSession, current_user: CurrentUser):
-    from app.curriculum.seeder import seed
-    await seed(db)
-    return {"status": "Curriculum seeded successfully"}
+@router.post("/unlock-all")
+async def unlock_all_concepts(db: DBSession, current_user: CurrentUser):
+    """Unlock all concepts for the current user."""
+    from app.models.curriculum import Concept
+    from app.models.progress import UserProgress
+    from sqlalchemy import select
+
+    concepts_result = await db.execute(
+        select(Concept).where(Concept.is_active == True)
+    )
+    concepts = concepts_result.scalars().all()
+
+    unlocked = 0
+    for concept in concepts:
+        prog_result = await db.execute(
+            select(UserProgress).where(
+                UserProgress.user_id == current_user.id,
+                UserProgress.concept_id == concept.id,
+            )
+        )
+        progress = prog_result.scalar_one_or_none()
+        if not progress:
+            db.add(UserProgress(
+                user_id=current_user.id,
+                concept_id=concept.id,
+                is_unlocked=True,
+            ))
+        else:
+            progress.is_unlocked = True
+        unlocked += 1
+
+    await db.commit()
+    return {"status": "ok", "concepts_unlocked": unlocked}

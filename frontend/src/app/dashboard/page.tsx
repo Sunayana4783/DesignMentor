@@ -8,10 +8,12 @@ import MasteryBar from "@/components/ui/MasteryBar";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { BookOpen, Brain, AlertTriangle, Zap, Target, RotateCcw } from "lucide-react";
+import { BookOpen, Brain, AlertTriangle, Zap, Target, RotateCcw, LogOut } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { logout } = useAuthStore();
   const [dash, setDash] = useState<Dashboard | null>(null);
   const [concepts, setConcepts] = useState<ConceptProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,15 +85,24 @@ export default function DashboardPage() {
             <span className="text-brand-400 capitalize font-medium">{dash.phase_unlocked}</span>
           </p>
         </div>
-        {dash.current_concept && (
-          <Link
-            href={`/learn?concept=${dash.current_concept}`}
-            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+        <div className="flex items-center gap-3">
+          {dash.current_concept && (
+            <Link
+              href={`/learn?concept=${dash.current_concept}`}
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              Continue Learning
+            </Link>
+          )}
+          <button
+            onClick={() => { logout(); router.push("/auth/login"); }}
+            className="flex items-center gap-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 px-3 py-2.5 rounded-xl transition-colors text-sm border border-surface-border"
           >
-            <Zap className="w-4 h-4" />
-            Continue Learning
-          </Link>
-        )}
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Stats row */}

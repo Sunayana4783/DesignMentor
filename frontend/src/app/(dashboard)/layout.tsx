@@ -18,6 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     loadUser()
       .then(async () => {
+        // Only redirect to onboarding if user has never done it
         try {
           const { data } = await api.get("/api/onboarding/");
           if (!data || !data.is_complete) {
@@ -25,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             return;
           }
         } catch {
-          // onboarding check failed — continue to dashboard
+          // If onboarding check fails, just show dashboard
         }
         setChecked(true);
       })
