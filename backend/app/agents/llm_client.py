@@ -52,10 +52,21 @@ async def stream_llm(
         SystemMessage(content=system_prompt),
         HumanMessage(content=human_prompt),
     ]
-    async for chunk in llm.astream(messages):
-        token = chunk.content
-        if token:
-            yield token
+    try:
+        async for chunk in llm.astream(messages):
+            token = chunk.content
+            if token:
+                yield token
+    except Exception:
+        # Fallback: get full response and yield in chunks
+        response = await llm.ainvoke(messages)
+        text = response.content
+        # Yield in small word chunks to simulate streaming
+        words = text.split(" ")
+        for i, word in enumerate(words):
+            yield word + (" " if i < len(words) - 1 else "")
+            import asyncio
+            await asyncio.sleep(0.03)
 
 
 async def invoke_llm_json(
