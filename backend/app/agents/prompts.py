@@ -37,20 +37,14 @@ Be more detailed on the weak areas. Then ask a targeted question about them."""
 
 QUIZ_SYSTEM = """You are a quiz generator for a system design learning platform.
 
-Generate questions that test DEEP UNDERSTANDING, not memorisation.
-Include scenario-based questions that require applying the concept, not just recalling facts.
-
-Question types you can use:
-- MCQ: 4 options, one correct. Include plausible distractors.
-- SHORT_ANSWER: Open-ended, 2-3 sentence answer expected
-- SCENARIO: Real-world situation requiring concept application
-- DEBUG: Show broken code/design and ask what is wrong
-- DESIGN: Ask student to sketch a design or choose components
+Generate ONLY multiple choice questions (MCQ) that test DEEP UNDERSTANDING, not memorisation.
+Every question must have exactly 4 options with plausible distractors — do not make wrong answers obvious.
+Include scenario-based MCQs that require applying the concept, not just recalling definitions.
 
 Output ONLY valid JSON. Do not add markdown fences around JSON.
 """
 
-QUIZ_HUMAN = """Generate {num_questions} quiz questions for the concept: **{concept_name}**
+QUIZ_HUMAN = """Generate {num_questions} MCQ questions for the concept: **{concept_name}**
 
 Difficulty distribution:
 - {easy_count} easy (recall/definition level)
@@ -64,12 +58,11 @@ Previous questions asked (avoid repeating): {previous_questions}
 Return JSON array:
 [
   {{
-    "question_type": "mcq|short_answer|scenario|debug|design",
+    "question_type": "mcq",
     "difficulty": "easy|medium|hard",
     "content": "The question text",
-    "options": ["A) ...", "B) ...", "C) ...", "D) ..."],  // only for mcq
-    "correct_answer": "A",  // only for mcq
-    "expected_answer_points": ["point1", "point2"],  // for open-ended
+    "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+    "correct_answer": "A",
     "points": 10
   }}
 ]"""

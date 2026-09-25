@@ -61,14 +61,14 @@ async def quiz_node(state: AgentState) -> dict:
         "role": "assistant",
         "content": first_q.get("content", ""),
         "agent": "quiz",
-        "question_type": first_q.get("question_type", "short_answer"),
+        "question_type": first_q.get("question_type", "mcq"),
         "options": first_q.get("options", []),
     }
 
     return {
         "agent_action": "quiz",
         "current_question": first_q.get("content", ""),
-        "current_question_type": first_q.get("question_type", "short_answer"),
+        "current_question_type": first_q.get("question_type", "mcq"),
         "current_question_options": first_q.get("options", []),
         "messages": [new_message],
         "response_message": _format_question(first_q),

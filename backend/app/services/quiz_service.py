@@ -328,18 +328,9 @@ class QuizService:
                 return result.get("questions", [result])
             return result if isinstance(result, list) else []
         except Exception:
-            # Fallback questions — mix of theory, MCQ, code, scenario
+            # Fallback questions — all MCQ
             import random
             fallbacks = [
-                # Theory
-                {
-                    "question_type": "short_answer",
-                    "difficulty": "easy",
-                    "content": f"In one sentence, what is {concept.name} and why does it exist?",
-                    "expected_answer_points": [concept.description],
-                    "points": 10,
-                },
-                # MCQ
                 {
                     "question_type": "mcq",
                     "difficulty": "easy",
@@ -351,34 +342,47 @@ class QuizService:
                         "D) A networking protocol",
                     ],
                     "correct_answer": "A",
-                    "expected_answer_points": [],
                     "points": 10,
                 },
-                # Code/Problem
                 {
-                    "question_type": "debugging",
+                    "question_type": "mcq",
+                    "difficulty": "easy",
+                    "content": f"What is the PRIMARY purpose of {concept.name}?",
+                    "options": [
+                        "A) To reduce code duplication and improve readability",
+                        f"B) {concept.description[:80]}",
+                        "C) To speed up database queries",
+                        "D) To handle network failures automatically",
+                    ],
+                    "correct_answer": "B",
+                    "points": 10,
+                },
+                {
+                    "question_type": "mcq",
                     "difficulty": "medium",
-                    "content": f"A developer says: 'I understand {concept.name} in theory, but I'm not sure when to actually USE it in a real project.' Give them 2 concrete real-world scenarios where applying {concept.name} would make the code significantly better.",
-                    "expected_answer_points": ["scenario 1", "scenario 2", "why it helps"],
+                    "content": f"Which scenario is the BEST use case for {concept.name}?",
+                    "options": [
+                        "A) When you want to optimise SQL query performance",
+                        "B) When you need to handle concurrent database writes",
+                        f"C) When your codebase needs to apply {concept.name} principles",
+                        "D) When you are configuring a load balancer",
+                    ],
+                    "correct_answer": "C",
                     "points": 10,
                 },
-                # Scenario
                 {
-                    "question_type": "scenario",
+                    "question_type": "mcq",
                     "difficulty": "medium",
-                    "content": f"Your team is building an e-commerce platform. A senior engineer suggests using {concept.name} for the payment module. Another engineer disagrees and says it adds unnecessary complexity. Who is right, and why? What questions would you ask to decide?",
-                    "expected_answer_points": ["trade-offs", "when to apply", "context matters"],
+                    "content": f"A team is building an e-commerce platform. Which statement about applying {concept.name} is CORRECT?",
+                    "options": [
+                        "A) It should always be applied regardless of context",
+                        "B) It adds unnecessary complexity and should be avoided",
+                        "C) It is only useful for small projects",
+                        f"D) It helps when the codebase grows and maintainability matters",
+                    ],
+                    "correct_answer": "D",
                     "points": 10,
                 },
-                # Code writing
-                {
-                    "question_type": "design",
-                    "difficulty": "hard",
-                    "content": f"Write a minimal code example (10-15 lines, any language) that demonstrates {concept.name} correctly. Then write a SECOND version that violates it, and explain the difference.",
-                    "expected_answer_points": ["correct example", "violation example", "explanation of difference"],
-                    "points": 10,
-                },
-                # MCQ — harder
                 {
                     "question_type": "mcq",
                     "difficulty": "hard",
@@ -386,19 +390,36 @@ class QuizService:
                     "options": [
                         "A) It can improve code maintainability",
                         "B) It always makes code run faster",
-                        "C) It is a widely used principle in object-oriented design",
+                        "C) It is a widely used principle in software design",
                         "D) It can make code easier to test",
                     ],
                     "correct_answer": "B",
-                    "expected_answer_points": [],
                     "points": 10,
                 },
-                # Interview style
                 {
-                    "question_type": "scenario",
+                    "question_type": "mcq",
                     "difficulty": "hard",
-                    "content": f"In a system design interview, you are asked: 'How does {concept.name} help when building a large-scale application with 50 developers?' Give a structured answer covering: (1) the problem it solves at scale, (2) a concrete example, (3) potential downsides.",
-                    "expected_answer_points": ["problem at scale", "example", "downsides"],
+                    "content": f"In a large-scale system with 50 developers, what is the MOST significant benefit of {concept.name}?",
+                    "options": [
+                        "A) It reduces cloud infrastructure costs",
+                        "B) It eliminates the need for code reviews",
+                        "C) It allows independent development and testing of modules",
+                        "D) It automatically handles system failures",
+                    ],
+                    "correct_answer": "C",
+                    "points": 10,
+                },
+                {
+                    "question_type": "mcq",
+                    "difficulty": "hard",
+                    "content": f"Which of the following is a potential DOWNSIDE of overusing {concept.name}?",
+                    "options": [
+                        "A) It makes the codebase harder to version control",
+                        "B) It can introduce unnecessary abstraction and complexity",
+                        "C) It prevents the use of design patterns",
+                        "D) It breaks backward compatibility",
+                    ],
+                    "correct_answer": "B",
                     "points": 10,
                 },
             ]
