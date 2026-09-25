@@ -3,9 +3,11 @@
 Calls agents directly without LangGraph to avoid state merge issues.
 """
 import uuid
+import json
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DBSession
@@ -195,3 +197,182 @@ async def end_session(session_id: str, current_user: CurrentUser, db: DBSession)
         session.ended_at = datetime.now(timezone.utc)
         await db.commit()
     return {"status": "ended"}
+
+
+@router.post("/stream")
+async def learn_stream(req: LearnRequest, current_user: CurrentUser, db: DBSession):
+    """
+    Streaming version of the learn endpoint.
+    Returns Server-Sent Events (SSE) — tokens arrive word by word.
+    Only used for teacher and mentor agents (not quiz/design/interview).
+    """
+    # ── Load or create session ────────────────────────────────────────────
+    session_id = req.session_id
+    conversation_history = []
+
+    if session_id:
+        result = await db.execute(
+            select(LearningSession).where(
+                LearningSession.id == uuid.UUID(session_id),
+                LearningSession.user_id == current_user.id,
+                LearningSession.is_active == True,
+            )
+        )
+        session = result.scalar_one_or_none()
+        if session:
+            conversation_history = session.conversation_history or []
+    else:
+        session = None
+
+    if not session:
+        session = LearningSession(
+            id=uuid.uuid4(),
+            user_id=current_user.id,
+            mode=req.mode,
+            conversation_history=[],
+            agent_state={},
+        )
+        db.add(session)
+        await db.flush()
+        session_id = str(session.id)
+
+    # ── Load concept ──────────────────────────────────────────────────────
+    concept_result = await db.execute(
+        select(Concept).where(Concept.slug == req.concept_slug)
+    )
+    concept = concept_result.scalar_one_or_none()
+    if not concept:
+        raise HTTPException(status_code=404, detail=f"Concept '{req.concept_slug}' not found")
+
+    # ── Load student progress ─────────────────────────────────────────────
+    progress_result = await db.execute(
+        select(UserProgress).where(
+            UserProgress.user_id == current_user.id,
+            UserProgress.concept_id == concept.id,
+        )
+    )
+    progress = progress_result.scalar_one_or_none()
+    mastery_score = progress.mastery_score if progress else 0.0
+    weak_subtopics = progress.weak_subtopics if progress else []
+
+    # ── Load onboarding preferences ───────────────────────────────────────
+    from app.models.onboarding import UserOnboarding
+    onboarding_result = await db.execute(
+        select(UserOnboarding).where(UserOnboarding.user_id == current_user.id)
+    )
+    onboarding = onboarding_result.scalar_one_or_none()
+    cloud_provider = onboarding.cloud_provider.value if onboarding else "none"
+
+    # ── RAG context (best-effort) ─────────────────────────────────────────
+    rag_context = ""
+    try:
+        from app.rag.retriever import retrieve_context
+        rag_context = await retrieve_context(
+            query=f"{concept.name} {concept.description}",
+            concept_slug=req.concept_slug,
+            top_k=2,
+            db=db,
+        )
+    except Exception:
+        pass
+
+    user_input = req.user_message.strip()
+    mode = req.mode
+
+    # ── Non-streamable modes → fall back to regular endpoint ─────────────
+    if mode in ("quiz", "design", "interview"):
+        raise HTTPException(
+            status_code=400,
+            detail="Use /api/learn/ for quiz, design, and interview modes."
+        )
+
+    # ── Build prompts based on agent type ────────────────────────────────
+    from app.agents.prompts import (
+        TEACHER_SYSTEM, TEACHER_HUMAN,
+        MENTOR_SYSTEM, MENTOR_HUMAN,
+    )
+    import json as _json
+
+    if not user_input:
+        extra = f"Cloud provider preference: {cloud_provider}. Use {cloud_provider}-specific examples where relevant." if cloud_provider != "none" else ""
+        system_prompt = TEACHER_SYSTEM.format(
+            concept_name=concept.name,
+            mastery_score=mastery_score,
+            weak_subtopics=", ".join(weak_subtopics) if weak_subtopics else "none",
+            mode=mode,
+            rag_context=rag_context or "No additional context available.",
+        )
+        human_prompt = TEACHER_HUMAN.format(
+            concept_name=concept.name,
+            description=concept.description,
+            content_json=_json.dumps(concept.content, indent=2)[:1500],
+            extra_instruction=extra,
+        )
+        agent_action = "ask_question"
+    else:
+        history_text = "\n".join(
+            f"{m['role'].upper()}: {m['content'][:200]}"
+            for m in conversation_history[-10:]
+        )
+        system_prompt = MENTOR_SYSTEM
+        human_prompt = MENTOR_HUMAN.format(
+            concept_name=concept.name,
+            conversation_history=history_text,
+            user_input=user_input,
+        )
+        agent_action = "teach"
+
+    # ── Stream generator ──────────────────────────────────────────────────
+    from app.agents.llm_client import stream_llm
+
+    async def event_generator():
+        full_response = ""
+
+        meta = _json.dumps({
+            "type": "meta",
+            "session_id": session_id,
+            "agent_action": agent_action,
+            "concept_slug": req.concept_slug,
+            "mode": mode,
+        })
+        yield f"data: {meta}\n\n"
+
+        try:
+            async for token in stream_llm(system_prompt, human_prompt):
+                full_response += token
+                payload = _json.dumps({"type": "token", "content": token})
+                yield f"data: {payload}\n\n"
+        except Exception as exc:
+            logger.error("stream_error", error=str(exc))
+            err = _json.dumps({"type": "error", "content": "Stream interrupted."})
+            yield f"data: {err}\n\n"
+            return
+
+        done = _json.dumps({"type": "done", "content": full_response})
+        yield f"data: {done}\n\n"
+
+        try:
+            new_msg = {
+                "role": "assistant",
+                "content": full_response,
+                "agent": "teacher" if not user_input else "mentor",
+            }
+            if user_input:
+                user_msg = {"role": "user", "content": user_input, "agent": "user"}
+                updated_history = conversation_history + [user_msg, new_msg]
+            else:
+                updated_history = conversation_history + [new_msg]
+
+            session.conversation_history = updated_history[-20:]
+            await db.commit()
+        except Exception as exc:
+            logger.warning("stream_session_persist_failed", error=str(exc))
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

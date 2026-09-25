@@ -2,6 +2,7 @@
 import json
 import re
 import os
+from typing import AsyncGenerator
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from langchain_groq import ChatGroq
@@ -38,6 +39,23 @@ async def invoke_llm(
     ]
     response = await llm.ainvoke(messages)
     return response.content
+
+
+async def stream_llm(
+    system_prompt: str,
+    human_prompt: str,
+    temperature: float = 0.4,
+) -> AsyncGenerator[str, None]:
+    """Stream tokens from the LLM as they are generated."""
+    llm = get_llm(temperature)
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=human_prompt),
+    ]
+    async for chunk in llm.astream(messages):
+        token = chunk.content
+        if token:
+            yield token
 
 
 async def invoke_llm_json(

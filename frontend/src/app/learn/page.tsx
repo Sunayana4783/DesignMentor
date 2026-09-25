@@ -47,65 +47,135 @@ function LearnContent() {
     startSession();
   }, []);
 
-  const startSession = async () => {
+  const streamMessage = async (userMsg: string) => {
+    const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
+    if (mode === "quiz" || mode === "design" || mode === "interview") {
+      setIsLoading(true);
+      try {
+        const { data } = await learnApi.send({
+          concept_slug: conceptSlug,
+          mode,
+          user_message: userMsg,
+          session_id: sessionId ?? undefined,
+        });
+        setSessionId(data.session_id);
+        setAgentAction(data.agent_action);
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: data.agent_message,
+          agent: data.metadata?.agent as string,
+        }]);
+      } catch {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: "Something went wrong. Please try again.",
+          agent: "system",
+        }]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     setIsLoading(true);
-    setMessages([]);
+    setMessages(prev => [...prev, { role: "assistant", content: "", agent: "teacher" }]);
+
     try {
-      const { data } = await learnApi.send({
-        concept_slug: conceptSlug,
-        mode: mode,
-        user_message: "",
+      const res = await fetch(`${BASE_URL}/api/learn/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          concept_slug: conceptSlug,
+          mode,
+          user_message: userMsg,
+          session_id: sessionId ?? undefined,
+        }),
       });
-      setSessionId(data.session_id);
-      setAgentAction(data.agent_action);
-      setMessages([{
-        role: "assistant",
-        content: data.agent_message,
-        agent: data.metadata?.agent as string,
-      }]);
-    } catch (e) {
-      setMessages([{
-        role: "assistant",
-        content: "⚠️ Could not connect to the AI tutor. Make sure the backend is running.",
-        agent: "system",
-      }]);
+
+      if (!res.ok || !res.body) throw new Error("Stream failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === "meta") {
+              setSessionId(evt.session_id);
+              setAgentAction(evt.agent_action);
+            } else if (evt.type === "token") {
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    content: last.content + evt.content,
+                  };
+                }
+                return updated;
+              });
+            } else if (evt.type === "error") {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: "assistant",
+                  content: "Something went wrong. Please try again.",
+                  agent: "system",
+                };
+                return updated;
+              });
+            }
+          } catch {
+            // skip malformed SSE line
+          }
+        }
+      }
+    } catch {
+      setMessages(prev => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last?.role === "assistant" && last.content === "") {
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: "⚠️ Could not connect to the AI tutor. Make sure the backend is running.",
+            agent: "system",
+          };
+        }
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const startSession = async () => {
+    setIsLoading(true);
+    setMessages([]);
+    await streamMessage("");
   };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
     const userMsg = input.trim();
     setInput("");
-
-    const userMessage: Message = { role: "user", content: userMsg };
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const { data } = await learnApi.send({
-        concept_slug: conceptSlug,
-        mode,
-        user_message: userMsg,
-        session_id: sessionId ?? undefined,
-      });
-      setSessionId(data.session_id);
-      setAgentAction(data.agent_action);
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: data.agent_message,
-        agent: data.metadata?.agent as string,
-      }]);
-    } catch (e) {
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: "Something went wrong. Please try again.",
-        agent: "system",
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
+    setMessages(prev => [...prev, { role: "user", content: userMsg }]);
+    await streamMessage(userMsg);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -151,7 +221,7 @@ function LearnContent() {
         {messages.map((msg, i) => (
           <ChatBubble key={i} role={msg.role} content={msg.content} agent={msg.agent} />
         ))}
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
             <div className="bg-surface-card border border-surface-border rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex items-center gap-2 text-slate-400 text-sm">
