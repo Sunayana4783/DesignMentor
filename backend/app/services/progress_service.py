@@ -343,7 +343,7 @@ class ProgressService:
                 mastery_score=progress.mastery_score if progress else 0.0,
                 mastery_level=progress.mastery_level.value if progress and progress.mastery_level else "not_started",
                 attempts=progress.attempts if progress else 0,
-                is_unlocked=progress.is_unlocked if progress else False,
+                is_unlocked=True,  # all concepts are unlocked
                 is_completed=progress.is_completed if progress else False,
                 next_review_date=progress.next_review_date.isoformat() if progress and progress.next_review_date else None,
                 weak_subtopics=progress.weak_subtopics if progress else [],

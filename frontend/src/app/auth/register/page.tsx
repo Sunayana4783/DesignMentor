@@ -9,7 +9,12 @@ export default function RegisterPage() {
   const router = useRouter();
   const { register, isLoading } = useAuthStore();
   const [form, setForm] = useState({ email: "", username: "", password: "", full_name: "" });
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
+
+  // Debug: catch any non-string errors
+  if (error && typeof error !== "string") {
+    console.error("NON-STRING ERROR STATE:", error);
+  }
 
   const update = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -21,8 +26,17 @@ export default function RegisterPage() {
       await register(form.email, form.username, form.password, form.full_name || undefined);
       router.push("/onboarding");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg ?? "Registration failed.");
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      // FastAPI 422 returns detail as an array of validation error objects
+      let msg: string;
+      if (Array.isArray(detail)) {
+        msg = detail.map((e: { msg?: string }) => e.msg ?? JSON.stringify(e)).join(", ");
+      } else if (typeof detail === "string") {
+        msg = detail;
+      } else {
+        msg = "Registration failed.";
+      }
+      setError(msg);
     }
   };
 

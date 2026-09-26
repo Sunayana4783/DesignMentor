@@ -10,7 +10,6 @@ export default function KeepAlive() {
     const ping = async () => {
       try {
         await fetch(`${BACKEND_URL}/ping`);
-        await fetch(`${FRONTEND_URL}/api/ping`);
       } catch {
         // silent fail — just a keep-alive ping
       }

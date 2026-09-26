@@ -283,31 +283,9 @@ class OnboardingService:
         path_type,
         db: AsyncSession,
     ) -> None:
-        """Unlock the correct starting concepts based on path and self-assessed knowledge."""
-        from app.models.onboarding import PathType
-
-        # Determine starting concepts based on path
-        if path_type == PathType.HLD_ONLY:
-            # HLD only → start from Architecture fundamentals
-            start_slugs = ["arch-fundamentals", "arch-tier-models", "net-ip-dns"]
-        elif path_type == PathType.LLD_ONLY:
-            # LLD only → start from OOP
-            if lld_pct >= 80:
-                start_slugs = ["creational-patterns", "structural-patterns", "behavioral-patterns"]
-            elif lld_pct >= 60:
-                start_slugs = ["single-responsibility", "open-closed", "dry-kiss-yagni"]
-            else:
-                start_slugs = ["classes-and-objects", "encapsulation", "inheritance"]
-        else:
-            # Personalized or full → start from LLD
-            if lld_pct >= 80:
-                start_slugs = ["creational-patterns", "behavioral-patterns", "arch-fundamentals"]
-            elif lld_pct >= 60:
-                start_slugs = ["single-responsibility", "dry-kiss-yagni", "dependency-injection"]
-            else:
-                start_slugs = ["classes-and-objects", "encapsulation", "inheritance"]
-
-        for slug in start_slugs:
+        """Unlock all concepts in the curriculum plan so users can freely explore."""
+        # Unlock every concept in the plan
+        for slug in plan:
             concept_result = await db.execute(
                 select(Concept).where(Concept.slug == slug)
             )

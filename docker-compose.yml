@@ -36,8 +36,10 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://designmentor:designmentor_secret@postgres:5432/designmentor_db
       - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +58,8 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src
     depends_on:
       - backend
 
